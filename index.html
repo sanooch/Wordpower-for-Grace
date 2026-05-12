@@ -41,14 +41,14 @@
   .flashcard.flipped { transform: rotateY(180deg); }
   .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
   .card-back { transform: rotateY(180deg); background: var(--accent-light); }
+  .quiz-word-box { background: var(--surface); border-radius: var(--radius); padding: 28px; text-align: center; margin-bottom: 16px; border: 1px solid var(--border); }
   .quiz-opt { padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); margin-bottom: 8px; cursor: pointer; }
-  .quiz-opt.correct { background: var(--green-bg); color: var(--green); }
-  .quiz-opt.wrong { background: var(--red-bg); color: var(--red); }
+  .quiz-opt.correct { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .quiz-opt.wrong { background: var(--red-bg); color: var(--red); border-color: var(--red); }
   .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
   .report-table th, .report-table td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
-  .report-table th { color: var(--text3); font-weight: 500; }
   .save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-  .blank-input { width: 100%; padding: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 10px; }
+  .blank-input { width: 100%; padding: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 10px; text-align: center; font-size: 18px; }
 </style>
 </head>
 <body>
@@ -57,10 +57,10 @@
     <div class="home-header"><h1>단어 공부</h1></div>
     <div class="week-scroll" id="weekTabs"></div>
     <div class="menu-grid">
-      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 타이머 + 정오표</div></div>
-      <div class="menu-card" onclick="startFlash()">🃏 <div class="mc-label">플래시카드</div><div class="mc-desc">기본 암기</div></div>
-      <div class="menu-card" onclick="startQuiz()">✅ <div class="mc-label">객관식</div><div class="mc-desc">뜻 찾기</div></div>
-      <div class="menu-card" onclick="startBlank()">✏️ <div class="mc-label">빈칸 채우기</div><div class="mc-desc">직접 쓰기</div></div>
+      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 자동 넘김 + 정오표</div></div>
+      <div class="menu-card" onclick="startMode('flash')">🃏 <div class="mc-label">플래시카드</div><div class="mc-desc">기본 암기</div></div>
+      <div class="menu-card" onclick="startMode('quiz')">✅ <div class="mc-label">객관식</div><div class="mc-desc">뜻 찾기</div></div>
+      <div class="menu-card" onclick="startMode('blank')">✏️ <div class="mc-label">빈칸 채우기</div><div class="mc-desc">직접 쓰기</div></div>
       <div class="menu-card" onclick="startReview()">🔁 <div class="mc-label">오답 복습</div><div class="mc-desc" id="wrongCountLabel">틀린 단어</div></div>
     </div>
     <button class="save-btn" style="background:var(--bg2); color:var(--text2); margin-top:30px" onclick="showUpload()">📤 단어 데이터 관리</button>
@@ -69,11 +69,10 @@
   <div id="uploadScreen" class="screen">
     <div class="header"><button class="back-btn" onclick="showHome()">←</button><h2>데이터 관리</h2></div>
     <div class="upload-box">
-      <textarea id="wordTextarea" class="blank-input" style="min-height:200px" placeholder="영어,한글 형식으로 입력"></textarea>
-      <input type="text" id="weekNameInput" class="blank-input" placeholder="주차 이름">
+      <textarea id="wordTextarea" class="blank-input" style="min-height:200px; text-align:left; font-size:14px;" placeholder="영어,한글 형식으로 입력"></textarea>
+      <input type="text" id="weekNameInput" class="blank-input" placeholder="주차 이름 (예: 8주차)">
       <button class="save-btn" onclick="saveWords()">저장하기</button>
       <button class="save-btn" style="background:var(--red); margin-top:10px" onclick="resetData()">🚨 모든 데이터 초기화</button>
-      <div id="uploadMsg" style="text-align:center; margin-top:10px"></div>
     </div>
   </div>
 
@@ -81,16 +80,15 @@
     <div class="header"><button class="back-btn" onclick="confirmExit()">←</button><h2 id="gameTitle">학습 중</h2></div>
     <div class="prog-track"><div id="gameBar" class="prog-fill"></div><div id="timerDisplay" class="timer"></div></div>
     <div id="gameArea"></div>
-    <button id="nextBtn" class="save-btn" style="display:none; margin-top:15px" onclick="nextQuestion()">다음 문제</button>
   </div>
 
   <div id="resultScreen" class="screen">
     <div class="header"><h2>테스트 결과</h2></div>
     <div style="text-align:center; padding:20px 0">
       <div id="resPct" style="font-size:48px; font-weight:700; color:var(--accent)">0%</div>
-      <div id="resScore">0 / 0</div>
+      <div id="resScore" style="font-weight:700; margin-top:5px">0 / 0</div>
     </div>
-    <table class="report-table" id="reportTable">
+    <table class="report-table">
       <thead><tr><th>단어</th><th>결과</th><th>정답</th></tr></thead>
       <tbody id="reportContent"></tbody>
     </table>
@@ -102,14 +100,11 @@
 let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = Object.keys(allWeeks)[0] || '';
-let currentWords = [], idx = 0, score = 0, isTest = false, timer = null;
-let testReports = []; // {word, isCorrect, userAns, correctAns}
+let currentWords = [], idx = 0, score = 0, isTest = false, timer = null, lock = false;
+let testReports = [];
 
 function init() { renderWeekTabs(); updateWrongLabel(); }
-function persist() { 
-    localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); 
-    localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); 
-}
+function persist() { localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); }
 function resetData() { if(confirm("정말 모든 데이터를 삭제하시겠습니까?")) { localStorage.clear(); location.reload(); } }
 function renderWeekTabs() {
     const el = document.getElementById('weekTabs'); el.innerHTML = '';
@@ -124,8 +119,8 @@ function renderWeekTabs() {
 function updateWrongLabel() { document.getElementById('wrongCountLabel').textContent = `오답 복습 (${wrongWords.length})`; }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showHome() { clearInterval(timer); showScreen('home'); updateWrongLabel(); renderWeekTabs(); }
-function showUpload() { document.getElementById('wordTextarea').value = ''; document.getElementById('uploadMsg').textContent = ''; showScreen('uploadScreen'); }
-function confirmExit() { if(confirm("진행 상황이 저장되지 않습니다. 나가시겠습니까?")) showHome(); }
+function showUpload() { document.getElementById('wordTextarea').value = ''; showScreen('uploadScreen'); }
+function confirmExit() { if(confirm("나가시겠습니까?")) showHome(); }
 
 function saveWords() {
     const raw = document.getElementById('wordTextarea').value.trim();
@@ -136,97 +131,103 @@ function saveWords() {
     if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); }
 }
 
-// 테스트 및 학습 엔진
+// 학습 모드 통합 관리
+function startMode(mode) {
+    if(!currentWeek) return alert("단어를 먼저 등록하세요.");
+    isTest = false; currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
+    idx = 0; score = 0; testReports = [];
+    showScreen('gameScreen'); 
+    document.getElementById('timerDisplay').textContent = "";
+    renderQuestion(mode);
+}
+
 function startTest() {
-    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 먼저 등록해주세요!");
+    if(!currentWeek) return alert("단어를 먼저 등록하세요.");
     isTest = true; currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
-    showScreen('gameScreen'); document.getElementById('gameTitle').textContent = "10분 실전 테스트";
-    startTimer(600); renderQuestion();
-}
-function startFlash() { isTest = false; currentWords = [...allWeeks[currentWeek]]; idx = 0; showScreen('gameScreen'); renderQuestion('flash'); }
-function startQuiz() { isTest = false; currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random()); idx = 0; showScreen('gameScreen'); renderQuestion('quiz'); }
-function startBlank() { isTest = false; currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random()); idx = 0; showScreen('gameScreen'); renderQuestion('blank'); }
-function startReview() { if(!wrongWords.length) return alert("틀린 단어가 없습니다."); isTest = false; currentWords = [...wrongWords].sort(()=>0.5-Math.random()); idx = 0; showScreen('gameScreen'); renderQuestion('quiz'); }
-
-function startTimer(sec) {
-    let timeLeft = sec;
-    const disp = document.getElementById('timerDisplay');
+    showScreen('gameScreen'); 
+    document.getElementById('gameTitle').textContent = "10분 실전 테스트";
+    let timeLeft = 600;
     timer = setInterval(() => {
-        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-        disp.textContent = `${m}:${s < 10 ? '0'+s : s}`;
-        if(--timeLeft < 0) { clearInterval(timer); alert("시간 종료!"); finishTest(); }
+        let m = Math.floor(timeLeft/60), s = timeLeft%60;
+        document.getElementById('timerDisplay').textContent = `${m}:${s<10?'0'+s:s}`;
+        if(--timeLeft < 0) { clearInterval(timer); finishTest(); }
     }, 1000);
+    renderQuestion();
+}
+
+function startReview() {
+    if(!wrongWords.length) return alert("틀린 단어가 없습니다.");
+    isTest = false; currentWords = [...wrongWords].sort(()=>0.5-Math.random());
+    idx = 0; score = 0; testReports = [];
+    showScreen('gameScreen'); renderQuestion('quiz');
 }
 
 function renderQuestion(fixedMode) {
+    lock = false;
     const area = document.getElementById('gameArea'); area.innerHTML = '';
-    document.getElementById('nextBtn').style.display = 'none';
     const w = currentWords[idx];
     document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100) + '%';
     
-    let currentMode = fixedMode || (isTest ? ['flash', 'quiz', 'blank'][Math.floor(Math.random()*3)] : 'quiz');
+    let mode = fixedMode || ['flash', 'quiz', 'blank'][Math.floor(Math.random()*3)];
 
-    if(currentMode === 'flash') {
-        area.innerHTML = `<div class="flashcard" id="fc" onclick="this.classList.toggle('flipped'); document.getElementById('flashAns').style.display='flex';">
-            <div class="card-face"><b>${w.en}</b><br><small>탭하여 확인</small></div>
-            <div class="card-face card-back"><b>${w.ko}</b></div>
+    if(mode === 'flash') {
+        area.innerHTML = `<div class="flashcard" onclick="this.classList.toggle('flipped'); document.getElementById('fBtn').style.display='flex';">
+            <div class="card-face"><h2>${w.en}</h2><p style="margin-top:10px; color:var(--text3)">탭해서 뜻 확인</p></div>
+            <div class="card-face card-back"><h2>${w.ko}</h2></div>
         </div>
-        <div id="flashAns" style="display:none; gap:10px; margin-top:20px">
-            <button class="save-btn" style="background:var(--red)" onclick="handleAns(false, '몰라요')">몰라요</button>
-            <button class="save-btn" style="background:var(--green)" onclick="handleAns(true, '알아요')">알아요</button>
+        <div id="fBtn" style="display:none; gap:10px; margin-top:20px">
+            <button class="save-btn" style="background:var(--red)" onclick="handleAns(false)">몰라요</button>
+            <button class="save-btn" style="background:var(--green)" onclick="handleAns(true)">알아요</button>
         </div>`;
-    } else if(currentMode === 'quiz') {
+    } else if(mode === 'quiz') {
         const others = [...allWeeks[currentWeek]].filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
         const opts = [w.ko, ...others].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div class="quiz-word-box"><h3>${w.en}</h3></div><div id="qOpts"></div>`;
+        area.innerHTML = `<div class="quiz-word-box"><h1>${w.en}</h1></div><div id="qOpts"></div>`;
         opts.forEach(o => {
-            const btn = document.createElement('div'); btn.className = 'quiz-opt'; btn.textContent = o;
-            btn.onclick = () => {
-                if(document.querySelector('.quiz-opt.correct')) return;
-                const isCorrect = o === w.ko;
-                btn.classList.add(isCorrect ? 'correct' : 'wrong');
-                handleAns(isCorrect, o);
-                document.getElementById('nextBtn').style.display = 'block';
-            };
-            document.getElementById('qOpts').appendChild(btn);
+            const b = document.createElement('div'); b.className = 'quiz-opt'; b.textContent = o;
+            b.onclick = () => { if(lock) return; lock=true; const ok=o===w.ko; b.classList.add(ok?'correct':'wrong'); handleAns(ok, o); };
+            document.getElementById('qOpts').appendChild(b);
         });
     } else {
-        area.innerHTML = `<div class="quiz-word-box"><p>${w.ko}</p></div>
-            <input type="text" id="bInput" class="blank-input" placeholder="영단어를 입력하세요" autofocus>
-            <button class="save-btn" onclick="const v=document.getElementById('bInput').value; handleAns(v.toLowerCase().trim()==='${w.en.toLowerCase()}', v)">확인</button>`;
+        area.innerHTML = `<div class="quiz-word-box"><p>뜻: ${w.ko}</p></div>
+            <input type="text" id="bInput" class="blank-input" placeholder="영단어 입력" onkeyup="if(event.key==='Enter') checkBlank()">
+            <button class="save-btn" onclick="checkBlank()">확인</button>`;
+        setTimeout(()=>document.getElementById('bInput').focus(), 300);
     }
 }
 
-function handleAns(isCorrect, userAns) {
+function checkBlank() {
+    if(lock) return;
+    const v = document.getElementById('bInput').value.trim().toLowerCase();
+    if(!v) return;
+    lock = true;
+    handleAns(v === currentWords[idx].en.toLowerCase(), v);
+}
+
+function handleAns(isCorrect, userAns = "") {
     const w = currentWords[idx];
     if(isCorrect) score++;
     else { if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); }
     if(isCorrect) { wrongWords = wrongWords.filter(x=>x.en!==w.en); }
     persist();
-    testReports.push({ word: w.en, isCorrect, userAns, correctAns: w.ko });
-    if(!isTest || document.getElementById('bInput')) document.getElementById('nextBtn').style.display = 'block';
-    if(isTest && !document.getElementById('bInput') && !document.getElementById('flashAns')) nextQuestion();
-}
+    testReports.push({ word: w.en, isCorrect, correctAns: w.ko });
 
-function nextQuestion() {
-    if(++idx < currentWords.length) renderQuestion();
-    else isTest ? finishTest() : showHome();
+    // 정답이면 바로 넘어가고, 오답이면 1초간 답을 보여줌
+    setTimeout(() => {
+        if(++idx < currentWords.length) renderQuestion(isTest ? null : (isTest?'':(document.getElementById('gameTitle').textContent==='플래시카드'?'flash':(document.getElementById('gameTitle').textContent==='객관식'?'quiz':'blank'))));
+        else isTest ? finishTest() : showHome();
+    }, isCorrect ? 300 : 1200);
 }
 
 function finishTest() {
-    clearInterval(timer);
-    showScreen('resultScreen');
+    clearInterval(timer); showScreen('resultScreen');
     const pct = Math.round((score/currentWords.length)*100);
     document.getElementById('resPct').textContent = pct + "%";
     document.getElementById('resScore').textContent = `${score} / ${currentWords.length}`;
     const cont = document.getElementById('reportContent'); cont.innerHTML = '';
     testReports.forEach(r => {
-        cont.innerHTML += `<tr>
-            <td>${r.word}</td>
-            <td style="color:${r.isCorrect?'var(--green)':'var(--red)'}">${r.isCorrect?'○':'×'}</td>
-            <td>${r.isCorrect?'-':r.correctAns}</td>
-        </tr>`;
+        cont.innerHTML += `<tr><td>${r.word}</td><td style="color:${r.isCorrect?'var(--green)':'var(--red)'}">${r.isCorrect?'○':'×'}</td><td>${r.isCorrect?'-':r.correctAns}</td></tr>`;
     });
 }
 init();
