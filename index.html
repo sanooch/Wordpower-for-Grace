@@ -22,6 +22,7 @@
   .screen.active { display: block; }
   .header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-top: env(safe-area-inset-top, 12px); }
   .back-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); }
+  .tts-btn { background: none; border: none; cursor: pointer; font-size: 20px; padding: 5px; vertical-align: middle; margin-left: 8px; }
   .home-header { padding-top: calc(env(safe-area-inset-top, 12px) + 12px); margin-bottom: 28px; }
   .home-header h1 { font-size: 26px; font-weight: 700; }
   .week-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
@@ -101,6 +102,7 @@ let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = Object.keys(allWeeks)[0] || '';
 let currentWords = [], idx = 0, score = 0, isTest = false, timer = null, lock = false;
+let currentModeType = ''; // 현재 고정된 모드 저장
 let testReports = [];
 
 function init() { renderWeekTabs(); updateWrongLabel(); }
@@ -131,19 +133,32 @@ function saveWords() {
     if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); }
 }
 
-// 학습 모드 통합 관리
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'en-US';
+    msg.rate = 0.8;
+    window.speechSynthesis.speak(msg);
+}
+
+// 학습 모드 시작
 function startMode(mode) {
     if(!currentWeek) return alert("단어를 먼저 등록하세요.");
-    isTest = false; currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
+    isTest = false; 
+    currentModeType = mode; // 모드 고정
+    currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
-    showScreen('gameScreen'); 
+    document.getElementById('gameTitle').textContent = mode==='flash'?'플래시카드':(mode==='quiz'?'객관식':'빈칸 채우기');
     document.getElementById('timerDisplay').textContent = "";
-    renderQuestion(mode);
+    showScreen('gameScreen'); 
+    renderQuestion();
 }
 
 function startTest() {
     if(!currentWeek) return alert("단어를 먼저 등록하세요.");
-    isTest = true; currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
+    isTest = true;
+    currentModeType = 'mix'; // 테스트는 믹스
+    currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
     showScreen('gameScreen'); 
     document.getElementById('gameTitle').textContent = "10분 실전 테스트";
@@ -158,37 +173,42 @@ function startTest() {
 
 function startReview() {
     if(!wrongWords.length) return alert("틀린 단어가 없습니다.");
-    isTest = false; currentWords = [...wrongWords].sort(()=>0.5-Math.random());
+    isTest = false; currentModeType = 'quiz';
+    currentWords = [...wrongWords].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
-    showScreen('gameScreen'); renderQuestion('quiz');
+    document.getElementById('gameTitle').textContent = "오답 복습";
+    showScreen('gameScreen'); renderQuestion();
 }
 
-function renderQuestion(fixedMode) {
+function renderQuestion() {
     lock = false;
     const area = document.getElementById('gameArea'); area.innerHTML = '';
     const w = currentWords[idx];
     document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100) + '%';
     
-    let mode = fixedMode || ['flash', 'quiz', 'blank'][Math.floor(Math.random()*3)];
+    // 모드 결정: 고정 모드가 있으면 그것으로, 없으면 랜덤(테스트용)
+    let mode = (currentModeType === 'mix') ? ['flash', 'quiz', 'blank'][Math.floor(Math.random()*3)] : currentModeType;
 
     if(mode === 'flash') {
         area.innerHTML = `<div class="flashcard" onclick="this.classList.toggle('flipped'); document.getElementById('fBtn').style.display='flex';">
-            <div class="card-face"><h2>${w.en}</h2><p style="margin-top:10px; color:var(--text3)">탭해서 뜻 확인</p></div>
+            <div class="card-face"><h2>${w.en}</h2><button class="tts-btn" onclick="event.stopPropagation(); speak('${w.en}')">🔊</button></div>
             <div class="card-face card-back"><h2>${w.ko}</h2></div>
         </div>
         <div id="fBtn" style="display:none; gap:10px; margin-top:20px">
             <button class="save-btn" style="background:var(--red)" onclick="handleAns(false)">몰라요</button>
             <button class="save-btn" style="background:var(--green)" onclick="handleAns(true)">알아요</button>
         </div>`;
+        speak(w.en);
     } else if(mode === 'quiz') {
         const others = [...allWeeks[currentWeek]].filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
         const opts = [w.ko, ...others].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div class="quiz-word-box"><h1>${w.en}</h1></div><div id="qOpts"></div>`;
+        area.innerHTML = `<div class="quiz-word-box"><h1>${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1></div><div id="qOpts"></div>`;
         opts.forEach(o => {
             const b = document.createElement('div'); b.className = 'quiz-opt'; b.textContent = o;
             b.onclick = () => { if(lock) return; lock=true; const ok=o===w.ko; b.classList.add(ok?'correct':'wrong'); handleAns(ok, o); };
             document.getElementById('qOpts').appendChild(b);
         });
+        speak(w.en);
     } else {
         area.innerHTML = `<div class="quiz-word-box"><p>뜻: ${w.ko}</p></div>
             <input type="text" id="bInput" class="blank-input" placeholder="영단어 입력" onkeyup="if(event.key==='Enter') checkBlank()">
@@ -202,7 +222,9 @@ function checkBlank() {
     const v = document.getElementById('bInput').value.trim().toLowerCase();
     if(!v) return;
     lock = true;
-    handleAns(v === currentWords[idx].en.toLowerCase(), v);
+    const isCorrect = v === currentWords[idx].en.toLowerCase();
+    if(!isCorrect) speak(currentWords[idx].en);
+    handleAns(isCorrect, v);
 }
 
 function handleAns(isCorrect, userAns = "") {
@@ -213,11 +235,10 @@ function handleAns(isCorrect, userAns = "") {
     persist();
     testReports.push({ word: w.en, isCorrect, correctAns: w.ko });
 
-    // 정답이면 바로 넘어가고, 오답이면 1초간 답을 보여줌
     setTimeout(() => {
-        if(++idx < currentWords.length) renderQuestion(isTest ? null : (isTest?'':(document.getElementById('gameTitle').textContent==='플래시카드'?'flash':(document.getElementById('gameTitle').textContent==='객관식'?'quiz':'blank'))));
+        if(++idx < currentWords.length) renderQuestion();
         else isTest ? finishTest() : showHome();
-    }, isCorrect ? 300 : 1200);
+    }, isCorrect ? 300 : 1500);
 }
 
 function finishTest() {
