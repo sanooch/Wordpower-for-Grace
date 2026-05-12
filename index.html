@@ -219,7 +219,7 @@ async function handleImageUpload(event) {
     if (!file) return;
 
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = "⌛ 이미지 분석 및 단어 정리 중...";
+    msg.textContent = "⌛ 단어와 뜻만 골라내는 중...";
     
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -237,45 +237,35 @@ async function handleImageUpload(event) {
             const data = await response.json();
             const rawText = data.responses[0].fullTextAnnotation.text;
             
-            // 지능형 파싱 로직
             const lines = rawText.split('\n').filter(t => t.trim().length > 0);
             let processedWords = [];
 
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
+            lines.forEach(line => {
+                // 정규식 설명: 
+                // 1. 앞에 숫자(01, 02 등)가 있으면 제거
+                // 2. 단어와 뜻 사이에 콜론(:)이 있는 구조를 찾음
+                const cleanLine = line.replace(/^\d+\s*/, '').trim(); 
                 
-                // 1. 이미 '단어,뜻' 형태나 '단어:뜻' 형태인 경우 처리
-                if (line.includes(',') || line.includes(':') || line.includes(' - ')) {
-                    const delimiter = line.includes(',') ? ',' : (line.includes(':') ? ':' : ' - ');
-                    const parts = line.split(delimiter);
-                    processedWords.push(`${parts[0].trim()},${parts[1] ? parts[1].trim() : '뜻 입력'}`);
-                } 
-                // 2. 영어 단어만 있는 줄이라면, 다음 줄이 한국어인지 확인하여 합침
-                else if (/^[a-zA-Z\s-]+$/.test(line)) {
-                    const nextLine = lines[i + 1];
-                    if (nextLine && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(nextLine)) {
-                        processedWords.push(`${line},${nextLine.trim()}`);
-                        i++; // 다음 줄은 이미 썼으므로 건너뜀
-                    } else {
-                        processedWords.push(`${line},뜻 입력`);
+                if (cleanLine.includes(':')) {
+                    const parts = cleanLine.split(':');
+                    const word = parts[0].trim();
+                    const definition = parts[1].trim();
+                    
+                    // 영문 단어와 한글 뜻이 공존하는 줄만 추가 (예문 제외 로직)
+                    if (/[a-zA-Z]/.test(word) && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(definition)) {
+                        processedWords.push(`${word},${definition}`);
                     }
                 }
-                // 3. 그 외 (한국어가 먼저 나오거나 기타)
-                else {
-                    processedWords.push(`단어확인,${line}`);
-                }
-            }
+            });
             
             document.getElementById('wordTextarea').value = processedWords.join('\n');
-            msg.textContent = "✅ 정리 완료! 틀린 부분만 살짝 수정해주세요.";
+            msg.textContent = processedWords.length > 0 ? `✅ ${processedWords.length}개 단어 추출 완료!` : "❓ 단어를 찾지 못했습니다. 사진을 더 가까이 찍어보세요.";
         } catch (err) {
             msg.textContent = "❌ 분석 실패. API 설정을 확인하세요.";
-            console.error(err);
         }
     };
     reader.readAsDataURL(file);
 }
-
 /** 음성 출력 (TTS) **/
 function speakWord(event, elementId) {
     if (event) event.stopPropagation();
