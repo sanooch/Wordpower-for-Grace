@@ -40,10 +40,11 @@
   .question-text { font-size: 28px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: block; }
   .type-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
   .blank-input { width: 100%; padding: 16px; border: 2px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: 700; }
-  .blank-input:focus { border-color: var(--accent); }
   .blank-input.correct { border-color: var(--green); background: var(--green-bg); }
   .blank-input.wrong { border-color: var(--red); background: var(--red-bg); }
-  .feedback-msg { font-weight: 700; margin-bottom: 15px; min-height: 24px; }
+  .quiz-opt { padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); margin-bottom: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+  .quiz-opt.correct { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .quiz-opt.wrong { background: var(--red-bg); color: var(--red); border-color: var(--red); }
   .save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
@@ -96,7 +97,7 @@ let currentWeek = Object.keys(allWeeks)[0] || '';
 let currentWords = [], idx = 0, score = 0, isTest = false, timer = null, lock = false;
 let currentModeType = '';
 let testReports = [];
-let questionSide = 'en'; // 'en' 이면 영어문제, 'ko' 이면 한글문제
+let questionSide = 'en';
 
 function init() { renderWeekTabs(); updateWrongLabel(); }
 function persist() { localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); }
@@ -135,17 +136,17 @@ function speak(text) {
 }
 
 function startMode(mode) {
-    if(!currentWeek) return alert("단어를 등록하세요.");
+    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 먼저 등록하세요.");
     isTest = false; currentModeType = mode;
     currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
-    document.getElementById('gameTitle').textContent = mode==='super'?'플래시 주관식':'객관식';
+    document.getElementById('gameTitle').textContent = mode==='super'?'플래시 주관식':'객관식 퀴즈';
     document.getElementById('timerDisplay').textContent = "";
     showScreen('gameScreen'); renderQuestion();
 }
 
 function startTest() {
-    if(!currentWeek) return alert("단어를 등록하세요.");
+    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 먼저 등록하세요.");
     isTest = true; currentModeType = 'mix';
     currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
@@ -180,11 +181,9 @@ function renderQuestion() {
     if(mode === 'super') {
         questionSide = Math.random() > 0.5 ? 'en' : 'ko';
         const qText = questionSide === 'en' ? w.en : w.ko;
-        const subLabel = questionSide === 'en' ? '뜻을 입력하세요' : '영단어를 입력하세요';
-        
         area.innerHTML = `
             <div class="flash-box">
-                <span class="type-label">${subLabel}</span>
+                <span class="type-label">${questionSide === 'en'?'뜻을 입력하세요':'영단어를 입력하세요'}</span>
                 <span class="question-text">${qText}</span>
                 ${questionSide === 'en' ? `<button class="tts-btn" onclick="speak('${w.en}')">🔊</button>` : ''}
             </div>
@@ -192,7 +191,7 @@ function renderQuestion() {
             <input type="text" id="sInput" class="blank-input" placeholder="정답 입력" onkeyup="if(event.key==='Enter') checkSuper()">
             <button id="checkBtn" class="save-btn" onclick="checkSuper()">정답 확인</button>
             <div id="answerInfo" style="display:none; margin-top:15px; text-align:center; padding:15px; background:var(--bg2); border-radius:var(--radius-sm);">
-                <p style="color:var(--text2); font-size:14px; margin-bottom:5px;">정답:</p>
+                <p style="color:var(--text2); font-size:12px;">정답:</p>
                 <h2 style="color:var(--accent)">${questionSide === 'en' ? w.ko : w.en}</h2>
                 <button class="save-btn" style="margin-top:15px; background:var(--green);" onclick="moveNext()">다음 문제 →</button>
             </div>
@@ -200,12 +199,28 @@ function renderQuestion() {
         setTimeout(()=>document.getElementById('sInput').focus(), 300);
         if(questionSide === 'en') speak(w.en);
     } else if(mode === 'quiz') {
-        const others = [...allWeeks[currentWeek]].filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
-        const opts = [w.ko, ...others].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div class="quiz-word-box"><h1>${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1></div><div id="qOpts"></div>`;
+        // 객관식 오답 생성 로직 보강
+        const pool = allWeeks[currentWeek] || [];
+        const others = pool.filter(x => x.en !== w.en).sort(() => 0.5 - Math.random()).slice(0, 3).map(x => x.ko);
+        const opts = [...new Set([w.ko, ...others])].sort(() => 0.5 - Math.random());
+        
+        area.innerHTML = `
+            <div class="quiz-word-box" style="margin-bottom:20px; background:var(--surface); padding:30px; border-radius:var(--radius); border:1px solid var(--border); text-align:center;">
+                <h1 style="font-size:32px; color:var(--accent);">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
+            </div>
+            <div id="qOpts" style="display:flex; flex-direction:column; gap:10px;"></div>
+        `;
         opts.forEach(o => {
-            const b = document.createElement('div'); b.className = 'quiz-opt'; b.textContent = o;
-            b.onclick = () => { if(lock) return; lock=true; const ok=o===w.ko; b.classList.add(ok?'correct':'wrong'); handleAns(ok, o); };
+            const b = document.createElement('div');
+            b.className = 'quiz-opt';
+            b.textContent = o;
+            b.onclick = () => {
+                if(lock) return;
+                lock = true;
+                const ok = (o === w.ko);
+                b.classList.add(ok ? 'correct' : 'wrong');
+                handleAns(ok, o);
+            };
             document.getElementById('qOpts').appendChild(b);
         });
         speak(w.en);
@@ -220,30 +235,23 @@ function checkSuper() {
     const target = (questionSide === 'en' ? w.ko : w.en).toLowerCase();
     const fb = document.getElementById('feedback');
     
-    // 뜻풀이의 경우 여러 뜻이 쉼표로 있을 수 있으므로 포함 여부로 체크
-    const isCorrect = (questionSide === 'en') ? w.ko.split(',').map(s=>s.trim().toLowerCase()).includes(val) : (val === target);
+    const isCorrect = (questionSide === 'en') 
+        ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(ans => val.includes(ans) && ans.length > 0)
+        : (val === target);
 
     if(isCorrect) {
-        lock = true;
-        inp.classList.add('correct');
+        lock = true; inp.classList.add('correct');
         fb.innerHTML = `<span style="color:var(--green)">정답입니다! ✨</span>`;
         if(questionSide === 'ko') speak(w.en);
         handleAns(true, val);
     } else {
         inp.classList.add('wrong');
         fb.innerHTML = `<span style="color:var(--red)">틀렸습니다! 다시 생각해보세요.</span>`;
-        if(!wrongWords.find(x=>x.en===w.en)) {
-             wrongWords.push(w);
-             persist();
-             updateWrongLabel();
-        }
-        // 틀렸을 경우 1.5초 후 초기화해서 다시 풀 기회 제공
+        if(!wrongWords.find(x=>x.en===w.en)) { wrongWords.push(w); persist(); updateWrongLabel(); }
         setTimeout(() => {
-            inp.classList.remove('wrong');
-            inp.value = '';
+            inp.classList.remove('wrong'); inp.value = ''; inp.focus();
             fb.innerHTML = `<button onclick="showHint()" style="background:none; border:none; color:var(--text3); font-size:12px; text-decoration:underline;">정답 보기</button>`;
-            inp.focus();
-        }, 1500);
+        }, 1200);
     }
 }
 
@@ -259,13 +267,11 @@ function handleAns(isCorrect, userAns = "") {
     if(isCorrect) {
         score++;
         wrongWords = wrongWords.filter(x=>x.en!==w.en);
+    } else {
+        if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w);
     }
     persist();
-    
-    if(isCorrect) {
-        // 정답이면 0.8초 후 다음 문제
-        setTimeout(moveNext, 800);
-    }
+    if(isCorrect) setTimeout(moveNext, 800);
     if(isTest) testReports.push({ word: w.en, isCorrect });
 }
 
