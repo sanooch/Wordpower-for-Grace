@@ -219,7 +219,7 @@ async function handleImageUpload(event) {
     if (!file) return;
 
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = "⌛ 단어와 뜻만 골라내는 중...";
+    msg.textContent = "⌛ 단어와 뜻을 정밀하게 추출 중...";
     
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -237,31 +237,40 @@ async function handleImageUpload(event) {
             const data = await response.json();
             const rawText = data.responses[0].fullTextAnnotation.text;
             
-            const lines = rawText.split('\n').filter(t => t.trim().length > 0);
+            // 모든 줄을 가져와서 공백 제거
+            const lines = rawText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
             let processedWords = [];
 
             lines.forEach(line => {
-                // 정규식 설명: 
-                // 1. 앞에 숫자(01, 02 등)가 있으면 제거
-                // 2. 단어와 뜻 사이에 콜론(:)이 있는 구조를 찾음
-                const cleanLine = line.replace(/^\d+\s*/, '').trim(); 
+                // 1. 앞의 숫자와 마침표(예: 01. 또는 01) 제거
+                let cleanLine = line.replace(/^\d+[\s.]*/, '').trim();
                 
+                // 2. 콜론(:)이 포함된 줄인지 확인 (단어와 뜻의 핵심 구분자)
                 if (cleanLine.includes(':')) {
                     const parts = cleanLine.split(':');
-                    const word = parts[0].trim();
-                    const definition = parts[1].trim();
-                    
-                    // 영문 단어와 한글 뜻이 공존하는 줄만 추가 (예문 제외 로직)
-                    if (/[a-zA-Z]/.test(word) && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(definition)) {
-                        processedWords.push(`${word},${definition}`);
+                    const wordPart = parts[0].trim();
+                    const meanPart = parts[1].trim();
+
+                    // 3. 필터링: 왼쪽은 영어(알파벳), 오른쪽은 한글이 포함된 경우만 추출
+                    const hasEnglish = /[a-zA-Z]/.test(wordPart);
+                    const hasKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(meanPart);
+
+                    if (hasEnglish && hasKorean) {
+                        // 예문이나 불필요한 긴 문장이 섞이지 않도록 단어 부분만 한 번 더 정제
+                        // (단어 부분에 공백이 너무 많으면 예문일 확률이 높음)
+                        if (wordPart.split(' ').length <= 3) {
+                            processedWords.push(`${wordPart},${meanPart}`);
+                        }
                     }
                 }
             });
             
+            // 결과 출력
             document.getElementById('wordTextarea').value = processedWords.join('\n');
-            msg.textContent = processedWords.length > 0 ? `✅ ${processedWords.length}개 단어 추출 완료!` : "❓ 단어를 찾지 못했습니다. 사진을 더 가까이 찍어보세요.";
+            msg.textContent = processedWords.length > 0 ? `✅ ${processedWords.length}개 세트 발견!` : "❓ 인식된 단어가 없습니다. 사진을 정면에서 찍어보세요.";
         } catch (err) {
             msg.textContent = "❌ 분석 실패. API 설정을 확인하세요.";
+            console.error(err);
         }
     };
     reader.readAsDataURL(file);
