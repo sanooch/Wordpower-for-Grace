@@ -219,7 +219,7 @@ async function handleImageUpload(event) {
     if (!file) return;
 
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = "⌛ 단어와 뜻을 정밀하게 추출 중...";
+    msg.textContent = "⌛ 단어를 스마트하게 분석 중...";
     
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -237,40 +237,49 @@ async function handleImageUpload(event) {
             const data = await response.json();
             const rawText = data.responses[0].fullTextAnnotation.text;
             
-            // 모든 줄을 가져와서 공백 제거
-            const lines = rawText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+            // 1. 전체 텍스트를 줄단위로 쪼개고 숫자나 불필요한 공백 제거
+            const lines = rawText.split('\n')
+                .map(t => t.replace(/^\d+[\s.]*/, '').trim()) // 숫자 제거
+                .filter(t => t.length > 0);
+
             let processedWords = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                let current = lines[i];
 
-            lines.forEach(line => {
-                // 1. 앞의 숫자와 마침표(예: 01. 또는 01) 제거
-                let cleanLine = line.replace(/^\d+[\s.]*/, '').trim();
-                
-                // 2. 콜론(:)이 포함된 줄인지 확인 (단어와 뜻의 핵심 구분자)
-                if (cleanLine.includes(':')) {
-                    const parts = cleanLine.split(':');
-                    const wordPart = parts[0].trim();
-                    const meanPart = parts[1].trim();
-
-                    // 3. 필터링: 왼쪽은 영어(알파벳), 오른쪽은 한글이 포함된 경우만 추출
-                    const hasEnglish = /[a-zA-Z]/.test(wordPart);
-                    const hasKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(meanPart);
-
-                    if (hasEnglish && hasKorean) {
-                        // 예문이나 불필요한 긴 문장이 섞이지 않도록 단어 부분만 한 번 더 정제
-                        // (단어 부분에 공백이 너무 많으면 예문일 확률이 높음)
-                        if (wordPart.split(' ').length <= 3) {
-                            processedWords.push(`${wordPart},${meanPart}`);
-                        }
+                // [Case A] 한 줄에 영단어와 한글이 같이 있는 경우 (예: "vague: 모호한")
+                if (/[a-zA-Z]/.test(current) && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(current)) {
+                    // 콜론(:)이나 기호가 있다면 그것으로 나누고, 없으면 영어/한글 경계로 나눔
+                    let splitChar = current.includes(':') ? ':' : (current.includes('-') ? '-' : null);
+                    if (splitChar) {
+                        let [en, ko] = current.split(splitChar);
+                        processedWords.push(`${en.trim()},${ko.trim()}`);
+                    } else {
+                        // 기호 없이 붙어있으면 정규식으로 영어와 한글 분리
+                        let en = current.match(/[a-zA-Z\s]+/);
+                        let ko = current.match(/[ㄱ-ㅎㅏ-ㅣ가-힣\s,]+/);
+                        if (en && ko) processedWords.push(`${en[0].trim()},${ko[0].trim()}`);
                     }
                 }
-            });
+                // [Case B] 영단어만 있는 줄이고, 다음 줄에 한글이 나오는 경우
+                else if (/^[a-zA-Z\s-]+$/.test(current)) {
+                    if (i + 1 < lines.length && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(lines[i+1])) {
+                        processedWords.push(`${current},${lines[i+1].trim()}`);
+                        i++; // 다음 줄(뜻)은 사용했으니 건너뜀
+                    }
+                }
+            }
             
-            // 결과 출력
-            document.getElementById('wordTextarea').value = processedWords.join('\n');
-            msg.textContent = processedWords.length > 0 ? `✅ ${processedWords.length}개 세트 발견!` : "❓ 인식된 단어가 없습니다. 사진을 정면에서 찍어보세요.";
+            // 예문 필터링: 단어 부분이 너무 길면(문장이면) 제외
+            const finalResult = processedWords.filter(item => {
+                const enPart = item.split(',')[0];
+                return enPart.split(' ').length <= 4; // 4단어 이하만 단어로 간주
+            });
+
+            document.getElementById('wordTextarea').value = finalResult.join('\n');
+            msg.textContent = `✅ ${finalResult.length}개 단어 정리 완료!`;
         } catch (err) {
             msg.textContent = "❌ 분석 실패. API 설정을 확인하세요.";
-            console.error(err);
         }
     };
     reader.readAsDataURL(file);
