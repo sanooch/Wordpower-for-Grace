@@ -26,6 +26,12 @@
   .tts-btn { background: none; border: none; cursor: pointer; font-size: 24px; padding: 5px; vertical-align: middle; }
   .home-header { padding-top: calc(env(safe-area-inset-top, 12px) + 12px); margin-bottom: 28px; }
   .home-header h1 { font-size: 26px; font-weight: 700; }
+  
+  /* Voice Selector */
+  .voice-config { display: flex; gap: 10px; margin-bottom: 20px; background: var(--bg2); padding: 10px; border-radius: var(--radius-sm); }
+  .voice-opt { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border2); background: #fff; cursor: pointer; text-align: center; font-size: 13px; font-weight: 700; }
+  .voice-opt.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
   .week-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
   .week-tab { flex-shrink: 0; padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border2); background: var(--surface); font-size: 13px; cursor: pointer; }
   .week-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -37,9 +43,8 @@
   .prog-track { height: 5px; background: var(--bg2); border-radius: 99px; margin-bottom: 24px; overflow: hidden; position: relative; }
   .prog-fill { height: 5px; background: var(--accent); width: 0%; transition: width 0.35s; }
   .timer { position: absolute; right: 0; top: -20px; font-size: 12px; font-weight: 700; color: var(--red); }
-  .flash-box { background: var(--surface); border-radius: var(--radius); padding: 40px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+  .flash-box { background: var(--surface); border-radius: var(--radius); padding: 40px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); }
   .question-text { font-size: 28px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: block; }
-  .type-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
   .blank-input { width: 100%; padding: 16px; border: 2px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: 700; }
   .blank-input.correct { border-color: var(--green); background: var(--green-bg); }
   .blank-input.wrong { border-color: var(--red); background: var(--red-bg); }
@@ -54,9 +59,13 @@
 <div id="app">
   <div id="home" class="screen active">
     <div class="home-header"><h1>단어 공부 Pro</h1></div>
+    <div class="voice-config">
+      <div id="voice-f" class="voice-opt active" onclick="setVoice('female')">👩 여성 음성</div>
+      <div id="voice-m" class="voice-opt" onclick="setVoice('male')">👨 남성 음성</div>
+    </div>
     <div class="week-scroll" id="weekTabs"></div>
     <div class="menu-grid">
-      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 자동 넘김 + 정오표</div></div>
+      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 사운드 + 정오표</div></div>
       <div class="menu-card" style="grid-column: span 2; background: var(--accent-light); border: 2px solid var(--accent);" onclick="startMode('super')">🚀 <div class="mc-label">플래시 주관식 (한/영 랜덤)</div><div class="mc-desc">문제보고 정답 쓰기 (틀리면 재도전)</div></div>
       <div class="menu-card" onclick="startMode('quiz')">✅ <div class="mc-label">객관식 퀴즈</div><div class="mc-desc">뜻 찾기</div></div>
       <div class="menu-card" onclick="startReview()">🔁 <div class="mc-label">오답 복습</div><div class="mc-desc" id="wrongCountLabel">틀린 단어</div></div>
@@ -85,7 +94,6 @@
       <div id="resScore" style="font-weight:700; margin-top:5px">0 / 0</div>
     </div>
     <table style="width:100%; border-collapse: collapse; font-size:14px;">
-      <thead><tr style="border-bottom:1px solid var(--border)"><th style="padding:10px; text-align:left">단어</th><th style="padding:10px; text-align:left">결과</th></tr></thead>
       <tbody id="reportContent"></tbody>
     </table>
     <button class="save-btn" style="margin-top:30px" onclick="showHome()">홈으로</button>
@@ -97,11 +105,10 @@ let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = Object.keys(allWeeks)[0] || '';
 let currentWords = [], idx = 0, score = 0, isTest = false, timer = null, lock = false;
-let currentModeType = '';
-let testReports = [];
-let questionSide = 'en';
+let currentModeType = '', testReports = [], questionSide = 'en';
+let selectedVoiceType = localStorage.getItem('prefVoice') || 'female';
 
-function init() { renderWeekTabs(); updateWrongLabel(); }
+function init() { renderWeekTabs(); updateWrongLabel(); setVoice(selectedVoiceType); }
 function persist() { localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); }
 function resetData() { if(confirm("데이터를 삭제하시겠습니까?")) { localStorage.clear(); location.reload(); } }
 function renderWeekTabs() {
@@ -115,7 +122,7 @@ function renderWeekTabs() {
     });
 }
 function updateWrongLabel() { document.getElementById('wrongCountLabel').textContent = `오답 복습 (${wrongWords.length})`; }
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function showHome() { clearInterval(timer); showScreen('home'); updateWrongLabel(); renderWeekTabs(); }
 function showUpload() { document.getElementById('wordTextarea').value = ''; showScreen('uploadScreen'); }
 function confirmExit() { if(confirm("나가시겠습니까?")) showHome(); }
@@ -129,12 +136,48 @@ function saveWords() {
     if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); }
 }
 
+// 음성 설정 (여성/남성)
+function setVoice(type) {
+    selectedVoiceType = type;
+    localStorage.setItem('prefVoice', type);
+    document.getElementById('voice-f').classList.toggle('active', type === 'female');
+    document.getElementById('voice-m').classList.toggle('active', type === 'male');
+}
+
 function speak(text) {
     window.speechSynthesis.cancel();
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = 'en-US';
+    const voices = window.speechSynthesis.getVoices();
+    // 목소리 필터링 (간단한 매칭)
+    const voice = voices.find(v => {
+        if (selectedVoiceType === 'female') return v.name.includes('Google') && v.name.includes('Female') || v.name.includes('Zira');
+        return v.name.includes('Google') && v.name.includes('Male') || v.name.includes('David');
+    });
+    if (voice) msg.voice = voice;
     msg.rate = 0.8;
     window.speechSynthesis.speak(msg);
+}
+
+// 사운드 효과 (Beep)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(type) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    if(type === 'correct') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 높은 도
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    } else {
+        osc.type = 'square'; osc.frequency.setValueAtTime(220, audioCtx.currentTime); // 낮은 라
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    }
 }
 
 function startMode(mode) {
@@ -143,7 +186,6 @@ function startMode(mode) {
     currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
     document.getElementById('gameTitle').textContent = mode==='super'?'플래시 주관식':'객관식 퀴즈';
-    document.getElementById('timerDisplay').textContent = "";
     showScreen('gameScreen'); renderQuestion();
 }
 
@@ -153,7 +195,6 @@ function startTest() {
     currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
     showScreen('gameScreen'); 
-    document.getElementById('gameTitle').textContent = "10분 실전 테스트";
     let timeLeft = 600;
     timer = setInterval(() => {
         let m = Math.floor(timeLeft/60), s = timeLeft%60;
@@ -168,7 +209,6 @@ function startReview() {
     isTest = false; currentModeType = 'super';
     currentWords = [...wrongWords].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
-    document.getElementById('gameTitle').textContent = "오답 복습";
     showScreen('gameScreen'); renderQuestion();
 }
 
@@ -182,54 +222,37 @@ function renderQuestion() {
 
     if(mode === 'super') {
         questionSide = Math.random() > 0.5 ? 'en' : 'ko';
-        const qText = questionSide === 'en' ? w.en : w.ko;
         area.innerHTML = `
             <div class="flash-box">
-                <span class="type-label">${questionSide === 'en'?'뜻을 입력하세요':'영단어를 입력하세요'}</span>
-                <span class="question-text">${qText}</span>
-                ${questionSide === 'en' ? `<button class="tts-btn" onclick="speak('${w.en}')">🔊</button>` : ''}
+                <span class="type-label">${questionSide==='en'?'뜻을 입력하세요':'영단어를 입력하세요'}</span>
+                <span class="question-text">${questionSide==='en'?w.en:w.ko}</span>
+                ${questionSide==='en' ? `<button class="tts-btn" onclick="speak('${w.en}')">🔊</button>` : ''}
             </div>
-            <div id="feedback" class="feedback-msg"></div>
+            <div id="feedback" class="feedback-msg" style="text-align:center; min-height:30px;"></div>
             <input type="text" id="sInput" class="blank-input" placeholder="정답 입력" onkeyup="if(event.key==='Enter') checkSuper()">
             <button id="checkBtn" class="save-btn" onclick="checkSuper()">정답 확인</button>
             <div id="answerInfo" style="display:none; margin-top:15px; text-align:center; padding:15px; background:var(--bg2); border-radius:var(--radius-sm);">
-                <p style="color:var(--text2); font-size:12px;">정답:</p>
-                <h2 style="color:var(--accent)">${questionSide === 'en' ? w.ko : w.en}</h2>
-                <button class="save-btn" style="margin-top:15px; background:var(--green);" onclick="moveNext()">다음 문제 →</button>
+                <h2 style="color:var(--accent)">${questionSide==='en'?w.ko:w.en}</h2>
+                <button class="save-btn" style="margin-top:10px; background:var(--green);" onclick="moveNext()">다음으로</button>
             </div>
         `;
         setTimeout(()=>document.getElementById('sInput').focus(), 300);
-        if(questionSide === 'en') speak(w.en);
-    } else if(mode === 'quiz') {
+        if(questionSide==='en') speak(w.en);
+    } else {
         const pool = allWeeks[currentWeek] || [];
-        const others = pool.filter(x => x.en !== w.en).sort(() => 0.5 - Math.random()).slice(0, 3).map(x => x.ko);
-        const opts = [...new Set([w.ko, ...others])].sort(() => 0.5 - Math.random());
-        
-        area.innerHTML = `
-            <div class="quiz-word-box">
-                <h1 style="font-size:32px; color:var(--accent);">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
-            </div>
-            <div id="qOpts"></div>
-        `;
+        const others = pool.filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
+        const opts = [...new Set([w.ko, ...others])].sort(()=>0.5-Math.random());
+        area.innerHTML = `<div class="quiz-word-box" style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
+            <h1 style="color:var(--accent)">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
+        </div><div id="qOpts"></div>`;
         opts.forEach(o => {
-            const b = document.createElement('div');
-            b.className = 'quiz-opt';
-            b.textContent = o;
-            // 정답지 표시를 위해 id 할당 (오답 시 활용)
+            const b = document.createElement('div'); b.className = 'quiz-opt'; b.textContent = o;
             if(o === w.ko) b.id = "correctOpt";
-            
             b.onclick = () => {
-                if(lock) return;
-                lock = true;
+                if(lock) return; lock = true;
                 const ok = (o === w.ko);
-                
-                if(ok) {
-                    b.classList.add('correct');
-                } else {
-                    b.classList.add('wrong');
-                    // 오답 시 정답을 노란색으로 강조
-                    document.getElementById('correctOpt').classList.add('is-answer');
-                }
+                if(ok) { b.classList.add('correct'); playBeep('correct'); }
+                else { b.classList.add('wrong'); document.getElementById('correctOpt').classList.add('is-answer'); playBeep('wrong'); }
                 handleAns(ok, o);
             };
             document.getElementById('qOpts').appendChild(b);
@@ -243,26 +266,16 @@ function checkSuper() {
     const inp = document.getElementById('sInput');
     const val = inp.value.trim().toLowerCase();
     const w = currentWords[idx];
-    const target = (questionSide === 'en' ? w.ko : w.en).toLowerCase();
-    const fb = document.getElementById('feedback');
-    
-    const isCorrect = (questionSide === 'en') 
-        ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(ans => val.includes(ans) && ans.length > 0)
-        : (val === target);
+    const isCorrect = (questionSide==='en') ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(ans=>val.includes(ans)&&ans.length>0) : (val === w.en.toLowerCase());
 
     if(isCorrect) {
-        lock = true; inp.classList.add('correct');
-        fb.innerHTML = `<span style="color:var(--green)">정답입니다! ✨</span>`;
-        if(questionSide === 'ko') speak(w.en);
+        lock = true; inp.classList.add('correct'); playBeep('correct');
+        if(questionSide==='ko') speak(w.en);
         handleAns(true, val);
     } else {
-        inp.classList.add('wrong');
-        fb.innerHTML = `<span style="color:var(--red); font-size:13px; display:block; margin-top:5px;">틀렸습니다! 다시 시도하세요.</span>`;
+        inp.classList.add('wrong'); playBeep('wrong');
         if(!wrongWords.find(x=>x.en===w.en)) { wrongWords.push(w); persist(); updateWrongLabel(); }
-        setTimeout(() => {
-            inp.classList.remove('wrong'); inp.value = ''; inp.focus();
-            fb.innerHTML = `<button onclick="showHint()" style="background:none; border:none; color:var(--text3); font-size:12px; text-decoration:underline; cursor:pointer;">정답 보기</button>`;
-        }, 1200);
+        setTimeout(() => { inp.classList.remove('wrong'); inp.value = ''; inp.focus(); document.getElementById('feedback').innerHTML = `<button onclick="showHint()" style="color:var(--text3); font-size:12px; border:none; background:none; text-decoration:underline;">정답 보기</button>`; }, 1200);
     }
 }
 
@@ -275,21 +288,11 @@ function showHint() {
 
 function handleAns(isCorrect, userAns = "") {
     const w = currentWords[idx];
-    if(isCorrect) {
-        score++;
-        wrongWords = wrongWords.filter(x=>x.en!==w.en);
-    } else {
-        if(!wrongWords.find(x=>x.en===w.en)) {
-            wrongWords.push(w);
-            persist();
-            updateWrongLabel();
-        }
-    }
-    
+    if(isCorrect) { score++; wrongWords = wrongWords.filter(x=>x.en!==w.en); }
+    else { if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); }
+    persist();
     if(isTest) testReports.push({ word: w.en, isCorrect });
-
-    // 정답 시 0.8초 후 이동, 오답 시 정답을 충분히 확인하도록 1.5초 후 이동
-    setTimeout(moveNext, isCorrect ? 800 : 1500);
+    setTimeout(moveNext, isCorrect ? 800 : 2000); // 정답 0.8초, 오답 2.0초
 }
 
 function moveNext() {
@@ -303,10 +306,10 @@ function finishTest() {
     document.getElementById('resPct').textContent = pct + "%";
     document.getElementById('resScore').textContent = `${score} / ${currentWords.length}`;
     const cont = document.getElementById('reportContent'); cont.innerHTML = '';
-    testReports.forEach(r => {
-        cont.innerHTML += `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px">${r.word}</td><td style="padding:10px; color:${r.isCorrect?'var(--green)':'var(--red)'}">${r.isCorrect?'○':'×'}</td></tr>`;
-    });
+    testReports.forEach(r => { cont.innerHTML += `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px">${r.word}</td><td style="padding:10px; color:${r.isCorrect?'var(--green)':'var(--red)'}">${r.isCorrect?'○':'×'}</td></tr>`; });
 }
+// 목소리 리스트 로딩을 위해 한 번 실행
+window.speechSynthesis.onvoiceschanged = () => {};
 init();
 </script>
 </body>
