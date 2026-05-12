@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>단어공부 Pro</title>
+<title>가은이의 스마트 단어장</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
   :root {
@@ -24,8 +24,9 @@
   .header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-top: env(safe-area-inset-top, 12px); }
   .back-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); }
   .tts-btn { background: none; border: none; cursor: pointer; font-size: 24px; padding: 5px; vertical-align: middle; }
-  .home-header { padding-top: calc(env(safe-area-inset-top, 12px) + 12px); margin-bottom: 28px; }
-  .home-header h1 { font-size: 26px; font-weight: 700; }
+  .home-header { padding-top: calc(env(safe-area-inset-top, 12px) + 12px); margin-bottom: 10px; }
+  .home-header h1 { font-size: 24px; font-weight: 700; }
+  .status-bar { font-size: 11px; color: var(--accent); margin-bottom: 20px; font-weight: 500; }
   .voice-config { display: flex; gap: 10px; margin-bottom: 20px; background: var(--bg2); padding: 10px; border-radius: var(--radius-sm); }
   .voice-opt { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border2); background: #fff; cursor: pointer; text-align: center; font-size: 13px; font-weight: 700; }
   .voice-opt.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -39,7 +40,6 @@
   .test-card { grid-column: span 2; background: linear-gradient(135deg, #4A3FC0, #6c63ff); color: #fff; border: none; }
   .prog-track { height: 5px; background: var(--bg2); border-radius: 99px; margin-bottom: 24px; overflow: hidden; position: relative; }
   .prog-fill { height: 5px; background: var(--accent); width: 0%; transition: width 0.35s; }
-  .timer { position: absolute; right: 0; top: -20px; font-size: 12px; font-weight: 700; color: var(--red); }
   .flash-box { background: var(--surface); border-radius: var(--radius); padding: 40px 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); }
   .question-text { font-size: 28px; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: block; }
   .blank-input { width: 100%; padding: 16px; border: 2px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: 700; }
@@ -50,46 +50,30 @@
   .quiz-opt.wrong { background: var(--red-bg); color: var(--red); border-color: var(--red); }
   .quiz-opt.is-answer { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
   .save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; }
-  .backup-group { display: flex; gap: 8px; margin-top: 10px; }
-  .backup-btn { flex: 1; padding: 12px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border2); background: #fff; cursor: pointer; font-weight: 700; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="home" class="screen active">
     <div class="home-header"><h1>단어 공부 Pro</h1></div>
+    <div id="syncStatus" class="status-bar">● 구글 시트 연결 대기 중...</div>
     <div class="voice-config">
       <div id="voice-f" class="voice-opt active" onclick="setVoice('female')">👩 여성 음성</div>
       <div id="voice-m" class="voice-opt" onclick="setVoice('male')">👨 남성 음성</div>
     </div>
     <div class="week-scroll" id="weekTabs"></div>
     <div class="menu-grid">
-      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 사운드 + 정오표</div></div>
-      <div class="menu-card" style="grid-column: span 2; background: var(--accent-light); border: 2px solid var(--accent);" onclick="startMode('super')">🚀 <div class="mc-label">플래시 주관식 (한/영 랜덤)</div><div class="mc-desc">문제보고 정답 쓰기 (틀리면 재도전)</div></div>
+      <div class="menu-card test-card" onclick="startTest()">🔥 <div class="mc-label">10분 실전 테스트</div><div class="mc-desc">랜덤 유형 + 사운드</div></div>
+      <div class="menu-card" style="grid-column: span 2; background: var(--accent-light); border: 2px solid var(--accent);" onclick="startMode('super')">🚀 <div class="mc-label">플래시 주관식</div><div class="mc-desc">문제보고 정답 쓰기 (한/영 랜덤)</div></div>
       <div class="menu-card" onclick="startMode('quiz')">✅ <div class="mc-label">객관식 퀴즈</div><div class="mc-desc">뜻 찾기</div></div>
       <div class="menu-card" onclick="startReview()">🔁 <div class="mc-label">오답 복습</div><div class="mc-desc" id="wrongCountLabel">틀린 단어</div></div>
     </div>
-    <button class="save-btn" style="background:var(--bg2); color:var(--text2); margin-top:30px" onclick="showUpload()">📤 단어 데이터 관리</button>
-  </div>
-
-  <div id="uploadScreen" class="screen">
-    <div class="header"><button class="back-btn" onclick="showHome()">←</button><h2>데이터 관리</h2></div>
-    <textarea id="wordTextarea" class="blank-input" style="min-height:180px; text-align:left; font-size:14px;" placeholder="영어,한글 형식으로 입력"></textarea>
-    <input type="text" id="weekNameInput" class="blank-input" placeholder="주차 이름 (예: 8주차)">
-    <button class="save-btn" onclick="saveWords()">저장하기</button>
-    <div style="margin-top:30px; padding:15px; background:var(--bg2); border-radius:var(--radius);">
-      <h3 style="font-size:13px; margin-bottom:10px;">기기 간 데이터 이동</h3>
-      <div class="backup-group">
-        <button class="backup-btn" onclick="exportData()">📤 전체 내보내기</button>
-        <button class="backup-btn" onclick="importData()">📥 가져오기</button>
-      </div>
-    </div>
-    <button class="save-btn" style="background:var(--red); margin-top:30px" onclick="resetData()">🚨 모든 데이터 초기화</button>
+    <button class="save-btn" style="background:var(--bg2); color:var(--text2); margin-top:30px" onclick="loadFromSheet()">🔄 구글 시트 수동 동기화</button>
   </div>
 
   <div id="gameScreen" class="screen">
     <div class="header"><button class="back-btn" onclick="confirmExit()">←</button><h2 id="gameTitle">학습 중</h2></div>
-    <div class="prog-track"><div id="gameBar" class="prog-fill"></div><div id="timerDisplay" class="timer"></div></div>
+    <div class="prog-track"><div id="gameBar" class="prog-fill"></div></div>
     <div id="gameArea"></div>
   </div>
 
@@ -107,6 +91,9 @@
 </div>
 
 <script>
+// [여기에 구글 시트 CSV 주소를 붙여넣으세요]
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUvJVHQxRqfXIHgG3t6RBw98IkTDGmfUEQhsTc-XqVd5j1ndguto1Luw8HK5Io9CIKalczWY35-Avg/pub?output=csv";
+
 let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = Object.keys(allWeeks)[0] || '';
@@ -116,9 +103,46 @@ let selectedVoiceType = localStorage.getItem('prefVoice') || 'female';
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-function init() { renderWeekTabs(); updateWrongLabel(); setVoice(selectedVoiceType); }
-function persist() { localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); }
-function resetData() { if(confirm("데이터를 삭제하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+function init() { 
+    renderWeekTabs(); 
+    updateWrongLabel(); 
+    setVoice(selectedVoiceType);
+    if(SHEET_URL.includes("http")) loadFromSheet();
+}
+
+async function loadFromSheet() {
+    const status = document.getElementById('syncStatus');
+    status.textContent = "⌛ 구글 시트 동기화 중...";
+    try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.text();
+        const rows = data.split('\n').filter(row => row.trim() !== '');
+        
+        // CSV 파싱
+        const parsedWords = rows.map(row => {
+            const cols = row.split(',');
+            return { en: cols[0]?.trim(), ko: cols[1]?.trim() };
+        }).filter(w => w.en && w.ko);
+
+        if(parsedWords.length > 0) {
+            allWeeks['구글시트단어'] = parsedWords;
+            currentWeek = '구글시트단어';
+            persist();
+            renderWeekTabs();
+            status.textContent = "✅ 구글 시트 동기화 성공 (" + parsedWords.length + "단어)";
+            status.style.color = "var(--green)";
+        }
+    } catch (e) {
+        status.textContent = "❌ 시트 연결 실패 (주소를 확인하세요)";
+        status.style.color = "var(--red)";
+    }
+}
+
+function persist() { 
+    localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); 
+    localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); 
+}
+
 function renderWeekTabs() {
     const el = document.getElementById('weekTabs'); el.innerHTML = '';
     Object.keys(allWeeks).forEach(w => {
@@ -129,33 +153,11 @@ function renderWeekTabs() {
         el.appendChild(b);
     });
 }
+
 function updateWrongLabel() { document.getElementById('wrongCountLabel').textContent = `오답 복습 (${wrongWords.length})`; }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showHome() { clearInterval(timer); showScreen('home'); updateWrongLabel(); renderWeekTabs(); }
-function showUpload() { document.getElementById('wordTextarea').value = ''; showScreen('uploadScreen'); }
 function confirmExit() { if(confirm("종료하시겠습니까?")) showHome(); }
-
-function saveWords() {
-    const raw = document.getElementById('wordTextarea').value.trim();
-    const name = document.getElementById('weekNameInput').value.trim() || (Object.keys(allWeeks).length + 1) + "주차";
-    const parsed = raw.split('\n').map(l => {
-        const p = l.split(','); return { en: p[0]?.trim(), ko: p[1]?.trim() };
-    }).filter(w => w.en && w.ko);
-    if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); }
-}
-
-function exportData() {
-    const dataStr = JSON.stringify(allWeeks);
-    const t = document.createElement('textarea'); t.value = dataStr; document.body.appendChild(t); t.select();
-    document.execCommand('copy'); document.body.removeChild(t);
-    alert("데이터 복사 완료! 카톡으로 전송하세요.");
-}
-
-function importData() {
-    const code = prompt("내보낸 코드를 붙여넣으세요.");
-    if(!code) return;
-    try { allWeeks = JSON.parse(code); persist(); location.reload(); } catch(e) { alert("잘못된 데이터입니다."); }
-}
 
 function setVoice(type) {
     selectedVoiceType = type; localStorage.setItem('prefVoice', type);
@@ -178,9 +180,9 @@ function speak(text) {
 }
 
 function playBeep(type) {
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const now = audioCtx.currentTime;
-    if(type === 'correct') {
+    if (type === 'correct') {
         [523.25, 659.25, 783.99].forEach((f, i) => {
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
             osc.frequency.setValueAtTime(f, now + i*0.1);
@@ -200,7 +202,7 @@ function playBeep(type) {
 }
 
 function startMode(mode) {
-    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 등록하세요.");
+    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 불러오는 중입니다.");
     isTest = false; currentModeType = mode;
     currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
@@ -208,17 +210,11 @@ function startMode(mode) {
 }
 
 function startTest() {
-    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 등록하세요.");
+    if(!currentWeek) return alert("단어를 등록하세요.");
     isTest = true; currentModeType = 'mix';
     currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
     showScreen('gameScreen'); 
-    let timeLeft = 600;
-    timer = setInterval(() => {
-        let m = Math.floor(timeLeft/60), s = timeLeft%60;
-        document.getElementById('timerDisplay').textContent = `${m}:${s<10?'0'+s:s}`;
-        if(--timeLeft < 0) { clearInterval(timer); finishTest(); }
-    }, 1000);
     renderQuestion();
 }
 
@@ -257,7 +253,7 @@ function renderQuestion() {
         const pool = allWeeks[currentWeek] || [];
         const others = pool.filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
         const opts = [...new Set([w.ko, ...others])].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
+        area.innerHTML = `<div class="quiz-word-box" style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
             <h1 style="color:var(--accent)">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
         </div><div id="qOpts"></div>`;
         opts.forEach(o => {
@@ -314,7 +310,7 @@ function moveNext() {
 }
 
 function finishTest() {
-    clearInterval(timer); showScreen('resultScreen');
+    showScreen('resultScreen');
     const pct = Math.round((score/currentWords.length)*100);
     document.getElementById('resPct').textContent = pct + "%";
     document.getElementById('resScore').textContent = `${score} / ${currentWords.length}`;
