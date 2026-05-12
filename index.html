@@ -116,7 +116,6 @@ let currentWords = [], idx = 0, score = 0, isTest = false, timer = null, lock = 
 let currentModeType = '', testReports = [], questionSide = 'en';
 let selectedVoiceType = localStorage.getItem('prefVoice') || 'female';
 
-// 오디오 컨텍스트 초기화
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function init() { renderWeekTabs(); updateWrongLabel(); setVoice(selectedVoiceType); }
@@ -151,15 +150,13 @@ function exportData() {
     const dataStr = JSON.stringify(allWeeks);
     const t = document.createElement('textarea'); t.value = dataStr; document.body.appendChild(t); t.select();
     document.execCommand('copy'); document.body.removeChild(t);
-    alert("데이터가 복사되었습니다! 카톡으로 보내서 아이폰에 붙여넣으세요.");
+    alert("데이터 복사 완료!");
 }
 
 function importData() {
-    const code = prompt("내보낸 코드를 붙여넣으세요.");
+    const code = prompt("데이터를 붙여넣으세요.");
     if(!code) return;
-    try {
-        allWeeks = JSON.parse(code); persist(); location.reload();
-    } catch(e) { alert("잘못된 데이터입니다."); }
+    try { allWeeks = JSON.parse(code); persist(); location.reload(); } catch(e) { alert("오류!"); }
 }
 
 function setVoice(type) {
@@ -168,47 +165,12 @@ function setVoice(type) {
     document.getElementById('voice-m').classList.toggle('active', type === 'male');
 }
 
-function speak(text) {
-    window.speechSynthesis.cancel(); // 이전 음성 즉시 중단
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'en-US';
-    
-    const voices = window.speechSynthesis.getVoices();
-    const isFemale = selectedVoiceType === 'female';
-    
-    // 활기찬 목소리를 찾기 위한 필터링 (우선순위 전략)
-    const findDynamicVoice = () => {
-        // 1. 구글의 고품질 자연어 음성 (가장 활기참)
-        let best = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google') && (isFemale ? !v.name.includes('Male') : v.name.includes('Male')));
-        
-        // 2. 아이폰/맥의 프리미엄 음성 (Samantha나 Alex는 감도가 좋음)
-        if (!best) {
-            const premiumNames = isFemale ? ['Samantha', 'Karen', 'Victoria'] : ['Alex', 'Daniel', 'Fred'];
-            best = voices.find(v => v.lang.includes('en') && premiumNames.some(name => v.name.includes(name)));
-        }
-        
-        return best || voices.find(v => v.lang.includes('en'));
-    };
-
-    const targetVoice = findDynamicVoice();
-    if (targetVoice) msg.voice = targetVoice;
-
-    // [핵심] 활기차게 들리도록 하는 파라미터 조정
-    msg.rate = 0.9;   // 너무 빠르지 않게 (0.8~0.9 가 적당)
-    msg.pitch = 1.2;  // ★음높이를 1.2로 올려서 훨씬 밝고 '하이톤'으로 설정
-    msg.volume = 1.0; // 볼륨 최대
-
-    window.speechSynthesis.speak(msg);
-}
-
-// 브라우저가 목소리 목록을 로드할 시간을 주기 위한 리스너
-if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-}
+// [핵심] 효과음: 딩동댕 & 땡
 function playBeep(type) {
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const now = audioCtx.currentTime;
-    if(type === 'correct') {
+    if (type === 'correct') {
+        // 딩-동-댕 (C5, E5, G5)
         [523.25, 659.25, 783.99].forEach((f, i) => {
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
             osc.frequency.setValueAtTime(f, now + i*0.1);
@@ -219,12 +181,28 @@ function playBeep(type) {
             osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.1);
         });
     } else {
+        // 땡 (불협화음 sawtooth)
         const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, now);
         g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0.01, now + 0.5);
         osc.connect(g); g.connect(audioCtx.destination);
         osc.start(); osc.stop(now + 0.5);
     }
+}
+
+// [핵심] 활기찬 목소리 (Pitch 업)
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'en-US';
+    const voices = window.speechSynthesis.getVoices();
+    const target = voices.find(v => {
+        const isF = selectedVoiceType === 'female';
+        return v.lang.includes('en') && (isF ? v.name.includes('Google') && !v.name.includes('Male') || v.name.includes('Samantha') : v.name.includes('Male') || v.name.includes('Daniel'));
+    });
+    if(target) msg.voice = target;
+    msg.rate = 0.85; msg.pitch = 1.2; // 1.2로 높여서 활기차게
+    window.speechSynthesis.speak(msg);
 }
 
 function startMode(mode) {
@@ -285,7 +263,7 @@ function renderQuestion() {
         const pool = allWeeks[currentWeek] || [];
         const others = pool.filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
         const opts = [...new Set([w.ko, ...others])].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div class="quiz-word-box" style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
+        area.innerHTML = `<div style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
             <h1 style="color:var(--accent)">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
         </div><div id="qOpts"></div>`;
         opts.forEach(o => {
