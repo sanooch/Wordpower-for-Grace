@@ -27,7 +27,6 @@
   .home-header { padding-top: calc(env(safe-area-inset-top, 12px) + 12px); margin-bottom: 28px; }
   .home-header h1 { font-size: 26px; font-weight: 700; }
   
-  /* Voice Selector */
   .voice-config { display: flex; gap: 10px; margin-bottom: 20px; background: var(--bg2); padding: 10px; border-radius: var(--radius-sm); }
   .voice-opt { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border2); background: #fff; cursor: pointer; text-align: center; font-size: 13px; font-weight: 700; }
   .voice-opt.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -53,6 +52,10 @@
   .quiz-opt.wrong { background: var(--red-bg); color: var(--red); border-color: var(--red); }
   .quiz-opt.is-answer { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
   .save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; }
+  
+  /* Backup Buttons */
+  .backup-group { display: flex; gap: 8px; margin-top: 10px; }
+  .backup-btn { flex: 1; padding: 12px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border2); background: #fff; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -75,10 +78,21 @@
 
   <div id="uploadScreen" class="screen">
     <div class="header"><button class="back-btn" onclick="showHome()">←</button><h2>데이터 관리</h2></div>
-    <textarea id="wordTextarea" class="blank-input" style="min-height:200px; text-align:left; font-size:14px;" placeholder="영어,한글 형식으로 입력"></textarea>
+    <p style="font-size:12px; color:var(--text2); margin-bottom:10px;">주차별로 단어를 등록하세요 (형식: 영어,한글)</p>
+    <textarea id="wordTextarea" class="blank-input" style="min-height:180px; text-align:left; font-size:14px;" placeholder="apple,사과&#10;banana,바나나"></textarea>
     <input type="text" id="weekNameInput" class="blank-input" placeholder="주차 이름 (예: 8주차)">
-    <button class="save-btn" onclick="saveWords()">저장하기</button>
-    <button class="save-btn" style="background:var(--red); margin-top:10px" onclick="resetData()">🚨 모든 데이터 초기화</button>
+    <button class="save-btn" onclick="saveWords()">단어 추가/수정</button>
+    
+    <div style="margin-top:40px; padding-top:20px; border-top:1px solid var(--border2);">
+      <h3 style="font-size:14px; margin-bottom:10px;">기기 간 데이터 이동 (내보내기/가져오기)</h3>
+      <p style="font-size:11px; color:var(--text3); margin-bottom:10px;">전체 단어 데이터를 텍스트로 변환하여 복사합니다. 아이폰에 붙여넣으면 동기화됩니다.</p>
+      <div class="backup-group">
+        <button class="backup-btn" onclick="exportData()">📤 전체 내보내기</button>
+        <button class="backup-btn" onclick="importData()">📥 가져오기(덮어쓰기)</button>
+      </div>
+    </div>
+    
+    <button class="save-btn" style="background:var(--red); margin-top:40px" onclick="resetData()">🚨 모든 데이터 초기화</button>
   </div>
 
   <div id="gameScreen" class="screen">
@@ -110,10 +124,12 @@ let selectedVoiceType = localStorage.getItem('prefVoice') || 'female';
 
 function init() { renderWeekTabs(); updateWrongLabel(); setVoice(selectedVoiceType); }
 function persist() { localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks)); localStorage.setItem('vocabWrong', JSON.stringify(wrongWords)); }
-function resetData() { if(confirm("데이터를 삭제하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+function resetData() { if(confirm("모든 데이터를 삭제하시겠습니까? 백업되지 않습니다.")) { localStorage.clear(); location.reload(); } }
 function renderWeekTabs() {
     const el = document.getElementById('weekTabs'); el.innerHTML = '';
-    Object.keys(allWeeks).forEach(w => {
+    const weeks = Object.keys(allWeeks);
+    if(weeks.length === 0) { el.innerHTML = '<p style="font-size:12px; color:var(--text3)">등록된 단어가 없습니다.</p>'; return; }
+    weeks.forEach(w => {
         const b = document.createElement('button');
         b.className = 'week-tab' + (w === currentWeek ? ' active' : '');
         b.textContent = `${w} (${allWeeks[w].length})`;
@@ -122,21 +138,55 @@ function renderWeekTabs() {
     });
 }
 function updateWrongLabel() { document.getElementById('wrongCountLabel').textContent = `오답 복습 (${wrongWords.length})`; }
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showHome() { clearInterval(timer); showScreen('home'); updateWrongLabel(); renderWeekTabs(); }
 function showUpload() { document.getElementById('wordTextarea').value = ''; showScreen('uploadScreen'); }
-function confirmExit() { if(confirm("나가시겠습니까?")) showHome(); }
+function confirmExit() { if(confirm("학습을 종료하시겠습니까?")) showHome(); }
 
+// 단어 저장
 function saveWords() {
     const raw = document.getElementById('wordTextarea').value.trim();
     const name = document.getElementById('weekNameInput').value.trim() || (Object.keys(allWeeks).length + 1) + "주차";
+    if(!raw) return alert("단어를 입력하세요.");
     const parsed = raw.split('\n').map(l => {
         const p = l.split(','); return { en: p[0]?.trim(), ko: p[1]?.trim() };
     }).filter(w => w.en && w.ko);
-    if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); }
+    if(parsed.length) { allWeeks[name] = parsed; currentWeek = name; persist(); showHome(); alert(name + " 저장 완료!"); }
 }
 
-// 음성 설정 (여성/남성)
+// [핵심] 내보내기 기능
+function exportData() {
+    const dataStr = JSON.stringify(allWeeks);
+    const tempInput = document.createElement('textarea');
+    tempInput.value = dataStr;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    alert("전체 데이터가 복사되었습니다!\n카카오톡 등으로 전송하여 다른 기기에서 [가져오기] 하세요.");
+}
+
+// [핵심] 가져오기 기능
+function importData() {
+    const code = prompt("내보내기 한 데이터를 여기에 붙여넣으세요.");
+    if(!code) return;
+    try {
+        const parsed = JSON.parse(code);
+        if(typeof parsed === 'object') {
+            if(confirm("기존 단어들이 모두 사라지고 새 데이터로 대체됩니다. 계속할까요?")) {
+                allWeeks = parsed;
+                currentWeek = Object.keys(allWeeks)[0] || '';
+                persist();
+                renderWeekTabs();
+                alert("데이터를 성공적으로 가져왔습니다!");
+            }
+        }
+    } catch(e) {
+        alert("올바르지 않은 데이터 형식입니다.");
+    }
+}
+
+// 음성 설정
 function setVoice(type) {
     selectedVoiceType = type;
     localStorage.setItem('prefVoice', type);
@@ -149,7 +199,6 @@ function speak(text) {
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = 'en-US';
     const voices = window.speechSynthesis.getVoices();
-    // 목소리 필터링 (간단한 매칭)
     const voice = voices.find(v => {
         if (selectedVoiceType === 'female') return v.name.includes('Google') && v.name.includes('Female') || v.name.includes('Zira');
         return v.name.includes('Google') && v.name.includes('Male') || v.name.includes('David');
@@ -159,21 +208,19 @@ function speak(text) {
     window.speechSynthesis.speak(msg);
 }
 
-// 사운드 효과 (Beep)
+// 사운드 효과
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playBeep(type) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
+    osc.connect(gain); gain.connect(audioCtx.destination);
     if(type === 'correct') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 높은 도
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
         osc.start(); osc.stop(audioCtx.currentTime + 0.2);
     } else {
-        osc.type = 'square'; osc.frequency.setValueAtTime(220, audioCtx.currentTime); // 낮은 라
+        osc.type = 'square'; osc.frequency.setValueAtTime(220, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
         osc.start(); osc.stop(audioCtx.currentTime + 0.5);
@@ -217,7 +264,6 @@ function renderQuestion() {
     const area = document.getElementById('gameArea'); area.innerHTML = '';
     const w = currentWords[idx];
     document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100) + '%';
-    
     let mode = (currentModeType === 'mix') ? (Math.random() > 0.5 ? 'super' : 'quiz') : currentModeType;
 
     if(mode === 'super') {
@@ -228,7 +274,7 @@ function renderQuestion() {
                 <span class="question-text">${questionSide==='en'?w.en:w.ko}</span>
                 ${questionSide==='en' ? `<button class="tts-btn" onclick="speak('${w.en}')">🔊</button>` : ''}
             </div>
-            <div id="feedback" class="feedback-msg" style="text-align:center; min-height:30px;"></div>
+            <div id="feedback" style="text-align:center; min-height:30px;"></div>
             <input type="text" id="sInput" class="blank-input" placeholder="정답 입력" onkeyup="if(event.key==='Enter') checkSuper()">
             <button id="checkBtn" class="save-btn" onclick="checkSuper()">정답 확인</button>
             <div id="answerInfo" style="display:none; margin-top:15px; text-align:center; padding:15px; background:var(--bg2); border-radius:var(--radius-sm);">
@@ -242,7 +288,7 @@ function renderQuestion() {
         const pool = allWeeks[currentWeek] || [];
         const others = pool.filter(x=>x.en!==w.en).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.ko);
         const opts = [...new Set([w.ko, ...others])].sort(()=>0.5-Math.random());
-        area.innerHTML = `<div class="quiz-word-box" style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
+        area.innerHTML = `<div style="text-align:center; padding:30px; background:#fff; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
             <h1 style="color:var(--accent)">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
         </div><div id="qOpts"></div>`;
         opts.forEach(o => {
@@ -267,7 +313,6 @@ function checkSuper() {
     const val = inp.value.trim().toLowerCase();
     const w = currentWords[idx];
     const isCorrect = (questionSide==='en') ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(ans=>val.includes(ans)&&ans.length>0) : (val === w.en.toLowerCase());
-
     if(isCorrect) {
         lock = true; inp.classList.add('correct'); playBeep('correct');
         if(questionSide==='ko') speak(w.en);
@@ -292,7 +337,7 @@ function handleAns(isCorrect, userAns = "") {
     else { if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); }
     persist();
     if(isTest) testReports.push({ word: w.en, isCorrect });
-    setTimeout(moveNext, isCorrect ? 800 : 2000); // 정답 0.8초, 오답 2.0초
+    setTimeout(moveNext, isCorrect ? 800 : 2000);
 }
 
 function moveNext() {
@@ -308,8 +353,6 @@ function finishTest() {
     const cont = document.getElementById('reportContent'); cont.innerHTML = '';
     testReports.forEach(r => { cont.innerHTML += `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px">${r.word}</td><td style="padding:10px; color:${r.isCorrect?'var(--green)':'var(--red)'}">${r.isCorrect?'○':'×'}</td></tr>`; });
 }
-// 목소리 리스트 로딩을 위해 한 번 실행
-window.speechSynthesis.onvoiceschanged = () => {};
 init();
 </script>
 </body>
