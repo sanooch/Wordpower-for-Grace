@@ -219,7 +219,7 @@ async function handleImageUpload(event) {
     if (!file) return;
 
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = "⌛ 단어 라인만 골라내는 중...";
+    msg.textContent = "⌛ 이미지 전체에서 단어를 찾는 중...";
     
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -235,36 +235,35 @@ async function handleImageUpload(event) {
                 })
             });
             const data = await response.json();
-            const rawText = data.responses[0].fullTextAnnotation.text;
             
-            // 줄 단위로 나누고 양끝 공백 제거
-            const lines = rawText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+            // fullTextAnnotation 대신 각 textAnnotations 요소를 합쳐서 분석 시도
+            const annotations = data.responses[0].textAnnotations;
+            if (!annotations || annotations.length === 0) throw new Error("No text found");
+
+            const rawText = annotations[0].description;
+            const lines = rawText.split('\n');
             let processedWords = [];
 
             lines.forEach(line => {
-                // 핵심 규칙: 콜론(:)이 반드시 있어야 함
-                if (line.includes(':')) {
-                    const parts = line.split(':');
-                    let wordPart = parts[0].trim(); // 번호와 영문이 섞인 부분
-                    let meanPart = parts[1].trim(); // 한글 뜻 부분
-
-                    // 1. 왼쪽 단어 부분에서 숫자와 마침표(01. 등) 제거
-                    wordPart = wordPart.replace(/^\d+[\s.]*/, '').trim();
-
-                    // 2. 최종 검증: 왼쪽은 영어, 오른쪽은 한글이 존재할 때만 추가
-                    const hasEnglish = /[a-zA-Z]/.test(wordPart);
-                    const hasKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(meanPart);
-
-                    if (hasEnglish && hasKorean) {
-                        processedWords.push(`${wordPart},${meanPart}`);
+                const trimmed = line.trim();
+                // 보편적 규칙: 콜론(:)이 포함된 모든 줄을 대상으로 함
+                if (trimmed.includes(':')) {
+                    let [word, mean] = trimmed.split(':');
+                    
+                    // 번호 제거 (숫자로 시작하는 경우만)
+                    word = word.replace(/^\d+[\s.]*/, '').trim();
+                    
+                    if (word && mean) {
+                        processedWords.push(`${word},${mean.trim()}`);
                     }
                 }
             });
             
             document.getElementById('wordTextarea').value = processedWords.join('\n');
-            msg.textContent = processedWords.length > 0 ? `✅ ${processedWords.length}개 단어 추출 완료!` : "❓ 단어 형식을 찾지 못했습니다.";
+            msg.textContent = `✅ ${processedWords.length}개 항목을 찾았습니다!`;
         } catch (err) {
-            msg.textContent = "❌ 분석 실패. API 설정을 확인하세요.";
+            msg.textContent = "❌ 분석 중 오류가 발생했습니다.";
+            console.error(err);
         }
     };
     reader.readAsDataURL(file);
