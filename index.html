@@ -13,6 +13,7 @@
     --border2: rgba(0,0,0,0.15); --text: #1A1A1A; --text2: #666; --text3: #999;
     --accent: #4A3FC0; --accent-light: #EEEDFE; --accent-dark: #3C3489;
     --green: #3B6D11; --green-bg: #EAF3DE; --red: #A32D2D; --red-bg: #FCEBEB;
+    --yellow: #E6B800; --yellow-bg: #FFF9C4;
     --radius: 16px; --radius-sm: 10px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -42,9 +43,10 @@
   .blank-input { width: 100%; padding: 16px; border: 2px solid var(--border2); border-radius: var(--radius-sm); outline: none; margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: 700; }
   .blank-input.correct { border-color: var(--green); background: var(--green-bg); }
   .blank-input.wrong { border-color: var(--red); background: var(--red-bg); }
-  .quiz-opt { padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); margin-bottom: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+  .quiz-opt { padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); margin-bottom: 8px; cursor: pointer; font-weight: 500; }
   .quiz-opt.correct { background: var(--green-bg); color: var(--green); border-color: var(--green); }
   .quiz-opt.wrong { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+  .quiz-opt.is-answer { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
   .save-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
@@ -82,7 +84,7 @@
       <div id="resPct" style="font-size:48px; font-weight:700; color:var(--accent)">0%</div>
       <div id="resScore" style="font-weight:700; margin-top:5px">0 / 0</div>
     </div>
-    <table style="width:100%; border-collapse: collapse; font-size:14px;" id="reportTable">
+    <table style="width:100%; border-collapse: collapse; font-size:14px;">
       <thead><tr style="border-bottom:1px solid var(--border)"><th style="padding:10px; text-align:left">단어</th><th style="padding:10px; text-align:left">결과</th></tr></thead>
       <tbody id="reportContent"></tbody>
     </table>
@@ -136,7 +138,7 @@ function speak(text) {
 }
 
 function startMode(mode) {
-    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 먼저 등록하세요.");
+    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 등록하세요.");
     isTest = false; currentModeType = mode;
     currentWords = [...allWeeks[currentWeek]].sort(()=>0.5-Math.random());
     idx = 0; score = 0; testReports = [];
@@ -146,7 +148,7 @@ function startMode(mode) {
 }
 
 function startTest() {
-    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 먼저 등록하세요.");
+    if(!currentWeek || !allWeeks[currentWeek]) return alert("단어를 등록하세요.");
     isTest = true; currentModeType = 'mix';
     currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
     idx = 0; score = 0; testReports = [];
@@ -199,26 +201,35 @@ function renderQuestion() {
         setTimeout(()=>document.getElementById('sInput').focus(), 300);
         if(questionSide === 'en') speak(w.en);
     } else if(mode === 'quiz') {
-        // 객관식 오답 생성 로직 보강
         const pool = allWeeks[currentWeek] || [];
         const others = pool.filter(x => x.en !== w.en).sort(() => 0.5 - Math.random()).slice(0, 3).map(x => x.ko);
         const opts = [...new Set([w.ko, ...others])].sort(() => 0.5 - Math.random());
         
         area.innerHTML = `
-            <div class="quiz-word-box" style="margin-bottom:20px; background:var(--surface); padding:30px; border-radius:var(--radius); border:1px solid var(--border); text-align:center;">
+            <div class="quiz-word-box">
                 <h1 style="font-size:32px; color:var(--accent);">${w.en} <button class="tts-btn" onclick="speak('${w.en}')">🔊</button></h1>
             </div>
-            <div id="qOpts" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="qOpts"></div>
         `;
         opts.forEach(o => {
             const b = document.createElement('div');
             b.className = 'quiz-opt';
             b.textContent = o;
+            // 정답지 표시를 위해 id 할당 (오답 시 활용)
+            if(o === w.ko) b.id = "correctOpt";
+            
             b.onclick = () => {
                 if(lock) return;
                 lock = true;
                 const ok = (o === w.ko);
-                b.classList.add(ok ? 'correct' : 'wrong');
+                
+                if(ok) {
+                    b.classList.add('correct');
+                } else {
+                    b.classList.add('wrong');
+                    // 오답 시 정답을 노란색으로 강조
+                    document.getElementById('correctOpt').classList.add('is-answer');
+                }
                 handleAns(ok, o);
             };
             document.getElementById('qOpts').appendChild(b);
@@ -246,11 +257,11 @@ function checkSuper() {
         handleAns(true, val);
     } else {
         inp.classList.add('wrong');
-        fb.innerHTML = `<span style="color:var(--red)">틀렸습니다! 다시 생각해보세요.</span>`;
+        fb.innerHTML = `<span style="color:var(--red); font-size:13px; display:block; margin-top:5px;">틀렸습니다! 다시 시도하세요.</span>`;
         if(!wrongWords.find(x=>x.en===w.en)) { wrongWords.push(w); persist(); updateWrongLabel(); }
         setTimeout(() => {
             inp.classList.remove('wrong'); inp.value = ''; inp.focus();
-            fb.innerHTML = `<button onclick="showHint()" style="background:none; border:none; color:var(--text3); font-size:12px; text-decoration:underline;">정답 보기</button>`;
+            fb.innerHTML = `<button onclick="showHint()" style="background:none; border:none; color:var(--text3); font-size:12px; text-decoration:underline; cursor:pointer;">정답 보기</button>`;
         }, 1200);
     }
 }
@@ -268,11 +279,17 @@ function handleAns(isCorrect, userAns = "") {
         score++;
         wrongWords = wrongWords.filter(x=>x.en!==w.en);
     } else {
-        if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w);
+        if(!wrongWords.find(x=>x.en===w.en)) {
+            wrongWords.push(w);
+            persist();
+            updateWrongLabel();
+        }
     }
-    persist();
-    if(isCorrect) setTimeout(moveNext, 800);
+    
     if(isTest) testReports.push({ word: w.en, isCorrect });
+
+    // 정답 시 0.8초 후 이동, 오답 시 정답을 충분히 확인하도록 1.5초 후 이동
+    setTimeout(moveNext, isCorrect ? 800 : 1500);
 }
 
 function moveNext() {
