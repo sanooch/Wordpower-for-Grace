@@ -213,13 +213,13 @@ function showScreen(id) {
 function showHome() { showScreen('home'); updateWrongLabel(); renderWeekTabs(); }
 function showUpload() { document.getElementById('uploadMsg').textContent = ''; showScreen('uploadScreen'); }
 
-/** 이미지 분석 (OCR) **/
+/** 이미지 분석 (OCR) 및 지능형 파싱 **/
 async function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const msg = document.getElementById('uploadMsg');
-    msg.textContent = "⌛ 이미지를 분석 중입니다...";
+    msg.textContent = "⌛ 이미지 분석 및 단어 정리 중...";
     
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -235,14 +235,42 @@ async function handleImageUpload(event) {
                 })
             });
             const data = await response.json();
-            const text = data.responses[0].fullTextAnnotation.text;
+            const rawText = data.responses[0].fullTextAnnotation.text;
             
-            // 간단한 파싱 logic: 한 줄에 영어 단어와 한국어가 섞여있다고 가정
-            // Vision API 특성상 결과가 줄바꿈으로 오므로, 사용자 수동 수정 필요성 안내
-            document.getElementById('wordTextarea').value = text.split('\n').filter(t => t.trim()).join(',뜻을 입력하세요\n');
-            msg.textContent = "✅ 분석 완료! 형식에 맞춰 수정해주세요.";
+            // 지능형 파싱 로직
+            const lines = rawText.split('\n').filter(t => t.trim().length > 0);
+            let processedWords = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                
+                // 1. 이미 '단어,뜻' 형태나 '단어:뜻' 형태인 경우 처리
+                if (line.includes(',') || line.includes(':') || line.includes(' - ')) {
+                    const delimiter = line.includes(',') ? ',' : (line.includes(':') ? ':' : ' - ');
+                    const parts = line.split(delimiter);
+                    processedWords.push(`${parts[0].trim()},${parts[1] ? parts[1].trim() : '뜻 입력'}`);
+                } 
+                // 2. 영어 단어만 있는 줄이라면, 다음 줄이 한국어인지 확인하여 합침
+                else if (/^[a-zA-Z\s-]+$/.test(line)) {
+                    const nextLine = lines[i + 1];
+                    if (nextLine && /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(nextLine)) {
+                        processedWords.push(`${line},${nextLine.trim()}`);
+                        i++; // 다음 줄은 이미 썼으므로 건너뜀
+                    } else {
+                        processedWords.push(`${line},뜻 입력`);
+                    }
+                }
+                // 3. 그 외 (한국어가 먼저 나오거나 기타)
+                else {
+                    processedWords.push(`단어확인,${line}`);
+                }
+            }
+            
+            document.getElementById('wordTextarea').value = processedWords.join('\n');
+            msg.textContent = "✅ 정리 완료! 틀린 부분만 살짝 수정해주세요.";
         } catch (err) {
-            msg.textContent = "❌ 분석 실패. API 키를 확인하세요.";
+            msg.textContent = "❌ 분석 실패. API 설정을 확인하세요.";
+            console.error(err);
         }
     };
     reader.readAsDataURL(file);
