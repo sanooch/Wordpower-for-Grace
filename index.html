@@ -169,19 +169,42 @@ function setVoice(type) {
 }
 
 function speak(text) {
-    window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel(); // 이전 음성 즉시 중단
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = 'en-US';
+    
     const voices = window.speechSynthesis.getVoices();
-    const target = voices.find(v => {
-        const isF = selectedVoiceType === 'female';
-        return v.lang.includes('en') && (isF ? v.name.includes('Google') && !v.name.includes('Male') || v.name.includes('Samantha') : v.name.includes('Male') || v.name.includes('Daniel'));
-    });
-    if(target) msg.voice = target;
-    msg.rate = 0.85; msg.pitch = 1.05;
+    const isFemale = selectedVoiceType === 'female';
+    
+    // 활기찬 목소리를 찾기 위한 필터링 (우선순위 전략)
+    const findDynamicVoice = () => {
+        // 1. 구글의 고품질 자연어 음성 (가장 활기참)
+        let best = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google') && (isFemale ? !v.name.includes('Male') : v.name.includes('Male')));
+        
+        // 2. 아이폰/맥의 프리미엄 음성 (Samantha나 Alex는 감도가 좋음)
+        if (!best) {
+            const premiumNames = isFemale ? ['Samantha', 'Karen', 'Victoria'] : ['Alex', 'Daniel', 'Fred'];
+            best = voices.find(v => v.lang.includes('en') && premiumNames.some(name => v.name.includes(name)));
+        }
+        
+        return best || voices.find(v => v.lang.includes('en'));
+    };
+
+    const targetVoice = findDynamicVoice();
+    if (targetVoice) msg.voice = targetVoice;
+
+    // [핵심] 활기차게 들리도록 하는 파라미터 조정
+    msg.rate = 0.9;   // 너무 빠르지 않게 (0.8~0.9 가 적당)
+    msg.pitch = 1.2;  // ★음높이를 1.2로 올려서 훨씬 밝고 '하이톤'으로 설정
+    msg.volume = 1.0; // 볼륨 최대
+
     window.speechSynthesis.speak(msg);
 }
 
+// 브라우저가 목소리 목록을 로드할 시간을 주기 위한 리스너
+if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
 function playBeep(type) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const now = audioCtx.currentTime;
