@@ -358,35 +358,66 @@ let syncTimer;
 function scheduleSyncSave() { if(gToken) { clearTimeout(syncTimer); syncTimer = setTimeout(pushToGmail, 2000); } }
 
 async function pushToGmail() {
-    if(!gToken) return;
-    const dot = document.getElementById('syncDot'); dot.classList.add('loading');
-    try {
-        const syncData = { weeks: allWeeks, wrong: wrongWords, ts: Date.now() };
-        const toBase64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-        const encodedData = toBase64(JSON.stringify(syncData));
-        
-        const email = [`Subject: ${DRAFT_SUBJECT}`, `MIME-Version: 1.0`, `Content-Type: text/plain; charset="UTF-8"`, ``, encodedData].join('\r\n');
-        const raw = btoa(unescape(encodeURIComponent(email))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    if (!gToken) return;
+    const dot = document.getElementById('syncDot');
+    dot.className = 'sync-dot loading'; // 로딩 상태 표시
 
-        // 기존 백업 삭제
+    try {
+        const syncData = {
+            weeks: allWeeks,
+            wrong: wrongWords,
+            ts: Date.now()
+        };
+
+        const toBase64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const encodedData = JSON.stringify(syncData);
+        const b64Data = toBase64(encodedData);
+
+        const emailContent = [
+            `Subject: ${DRAFT_SUBJECT}`,
+            `MIME-Version: 1.0`,
+            `Content-Type: text/plain; charset="UTF-8"`,
+            ``,
+            `${b64Data}`
+        ].join('\r\n');
+
+        const raw = btoa(unescape(encodeURIComponent(emailContent)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        // 1. 기존 백업 삭제
         const search = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}`, {
             headers: { Authorization: `Bearer ${gToken}` }
         }).then(r => r.json());
-        
-        if(search.drafts) {
-            for(const d of search.drafts) {
+
+        if (search.drafts) {
+            for (const d of search.drafts) {
                 await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}`, {
-                    method: 'DELETE', headers: { Authorization: `Bearer ${gToken}` }
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${gToken}` }
                 });
             }
         }
-        // 새 백업 저장
-        await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-            method: 'POST', headers: { Authorization: `Bearer ${gToken}`, 'Content-Type': 'application/json' },
+
+        // 2. 새 백업 생성
+        const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${gToken}`,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ message: { raw } })
         });
-        dot.classList.remove('loading');
-    } catch(e) { dot.classList.add('error'); }
+
+        if (!res.ok) throw new Error('저장 실패');
+
+        localStorage.setItem('lastSync', new Date().toISOString());
+        localStorage.setItem('lastSyncTs', syncData.ts);
+        updateSyncUI(); // 성공 시 UI 갱신
+    } catch (e) {
+        console.error('동기화 오류:', e);
+        dot.className = 'sync-dot error';
+        document.getElementById('syncLabel').textContent = '동기화 오류 발생';
+    }
 }
 
 async function pullFromGmail() {
