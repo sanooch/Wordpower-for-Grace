@@ -5,1018 +5,426 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>단어장</title>
+<title>단어장 ✦ 스마트 동기화</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #F4F2EE;
-  --surface: #FFFFFF;
-  --surface2: #EFEDE8;
-  --border: rgba(0,0,0,0.09);
-  --border2: rgba(0,0,0,0.16);
-  --text: #1C1B18;
-  --text2: #6B6860;
-  --text3: #A8A69F;
-  --accent: #3730A3;
-  --accent-bg: #EEEEFF;
-  --accent-mid: #6366F1;
-  --green: #166534;
-  --green-bg: #DCFCE7;
-  --red: #991B1B;
-  --red-bg: #FEE2E2;
-  --yellow-bg: #FEF9C3;
-  --yellow: #854D0E;
-  --radius: 18px;
-  --radius-sm: 12px;
-  --radius-xs: 8px;
-  --font: 'DM Sans', 'Noto Sans KR', sans-serif;
-  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --bg: #F4F2EE; --surface: #FFFFFF; --surface2: #EFEDE8; --border: rgba(0,0,0,0.09);
+  --border2: rgba(0,0,0,0.16); --text: #1C1B18; --text2: #6B6860; --text3: #A8A69F;
+  --accent: #3730A3; --accent-bg: #EEEEFF; --accent-mid: #6366F1; --green: #166534;
+  --green-bg: #DCFCE7; --red: #991B1B; --red-bg: #FEE2E2; --yellow-bg: #FEF9C3;
+  --yellow: #854D0E; --radius: 18px; --radius-sm: 12px; --radius-xs: 8px;
+  --font: 'DM Sans', 'Noto Sans KR', sans-serif; --shadow: 0 2px 12px rgba(0,0,0,0.07);
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; }
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-#app {
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: 100vh;
-  position: relative;
-}
-
-/* ── screens ── */
-.screen { display: none; animation: fadeUp 0.22s ease; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+#app { max-width: 430px; margin: 0 auto; min-height: 100vh; position: relative; }
+.screen { display: none; animation: fadeUp 0.22s ease; padding-bottom: 40px; }
 .screen.active { display: block; }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── layout helpers ── */
-.pad { padding: 0 18px; }
-.gap { height: 10px; }
-
-/* ── topbar ── */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 18px 4px;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.topbar { display: flex; align-items: center; gap: 10px; padding: 16px 18px 4px; padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
 .topbar h2 { font-size: 17px; font-weight: 700; flex: 1; }
-.back-btn {
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 1px solid var(--border2);
-  background: var(--surface);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--text2); font-size: 16px;
-}
-
-/* ── home header ── */
-.home-header {
-  padding: 20px 18px 12px;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
-}
-.home-header h1 {
-  font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
-}
-.home-header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
-
-/* ── sync bar ── */
-.sync-bar {
-  display: flex; align-items: center; gap: 8px;
-  margin: 0 18px 16px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border);
-  font-size: 12px;
-}
-.sync-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--green); flex-shrink: 0;
-  transition: background 0.3s;
-}
+.back-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); }
+.home-header { padding: 20px 18px 12px; padding-top: calc(env(safe-area-inset-top, 0px) + 20px); }
+.home-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.sync-bar { display: flex; align-items: center; gap: 8px; margin: 0 18px 16px; padding: 10px 14px; background: var(--surface); border-radius: var(--radius-xs); border: 1px solid var(--border); font-size: 12px; }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+.sync-dot.ok { background: var(--green); }
 .sync-dot.loading { background: #CA8A04; animation: blink 1s infinite; }
 .sync-dot.error { background: var(--red); }
-.sync-dot.offline { background: var(--text3); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .sync-label { flex: 1; color: var(--text2); }
-.sync-action {
-  font-size: 12px; font-weight: 600;
-  color: var(--accent); background: none; border: none; cursor: pointer;
-  padding: 2px 4px;
-}
-
-/* ── google login ── */
-.google-btn {
-  display: flex; align-items: center; gap: 10px; justify-content: center;
-  width: calc(100% - 36px); margin: 0 18px;
-  padding: 13px 18px;
-  background: var(--surface); border: 1px solid var(--border2);
-  border-radius: var(--radius-sm); cursor: pointer;
-  font-size: 14px; font-weight: 600; font-family: var(--font);
-  color: var(--text); transition: background 0.15s;
-}
-.google-btn:active { background: var(--surface2); }
-.google-logo { width: 18px; height: 18px; }
-
-/* ── week tabs ── */
-.week-scroll {
-  display: flex; gap: 6px;
-  overflow-x: auto; padding: 0 18px 12px;
-  scrollbar-width: none;
-}
+.sync-action { font-size: 12px; font-weight: 600; color: var(--accent); background: none; border: none; cursor: pointer; }
+.week-scroll { display: flex; gap: 6px; overflow-x: auto; padding: 0 18px 12px; scrollbar-width: none; }
 .week-scroll::-webkit-scrollbar { display: none; }
-.week-chip {
-  flex-shrink: 0; padding: 6px 13px;
-  border-radius: 99px;
-  border: 1px solid var(--border2);
-  background: var(--surface);
-  font-size: 12px; font-weight: 600;
-  cursor: pointer; color: var(--text2);
-  font-family: var(--font);
-  transition: all 0.15s;
-}
+.week-chip { flex-shrink: 0; padding: 6px 13px; border-radius: 99px; border: 1px solid var(--border2); background: var(--surface); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text2); transition: all 0.15s; }
 .week-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.week-chip.new-chip { color: var(--text3); }
-
-/* ── menu cards ── */
-.menu-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 0 18px;
-}
-.mc {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 16px 14px 14px;
-  cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
-  position: relative; overflow: hidden;
-}
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 18px; }
+.mc { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px 14px 14px; cursor: pointer; transition: transform 0.12s; position: relative; }
 .mc:active { transform: scale(0.97); }
 .mc-full { grid-column: span 2; }
-.mc-hl {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.mc-hl .mc-desc { color: rgba(255,255,255,0.65); }
+.mc-hl { background: var(--accent); border-color: var(--accent); color: #fff; }
 .mc-icon { font-size: 22px; margin-bottom: 8px; }
 .mc-label { font-size: 14px; font-weight: 700; }
 .mc-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-/* ── progress bar ── */
-.prog-track {
-  height: 4px; background: var(--surface2);
-  border-radius: 99px; overflow: hidden;
-  margin: 0 18px 20px;
-}
-.prog-fill {
-  height: 4px; background: var(--accent-mid);
-  width: 0%; transition: width 0.3s ease;
-}
-
-/* ── quiz area ── */
-.card-box {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  padding: 34px 24px;
-  margin: 0 18px 16px;
-  text-align: center;
-}
-.card-hint { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.card-word {
-  font-size: 30px; font-weight: 700; color: var(--accent);
-  letter-spacing: -0.5px; line-height: 1.2;
-}
-.tts-btn {
-  background: none; border: none; cursor: pointer;
-  font-size: 20px; margin-left: 6px; vertical-align: middle;
-  padding: 4px; border-radius: 50%;
-}
-
-.blank-input {
-  width: calc(100% - 36px); margin: 0 18px 10px;
-  padding: 15px 18px;
-  border: 2px solid var(--border2);
-  border-radius: var(--radius-sm);
-  font-size: 18px; font-weight: 700; font-family: var(--font);
-  text-align: center; outline: none; background: var(--surface);
-  color: var(--text);
-  transition: border-color 0.2s, background 0.2s;
-}
+.mc-hl .mc-desc { color: rgba(255,255,255,0.7); }
+.prog-track { height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 0 18px 20px; }
+.prog-fill { height: 4px; background: var(--accent-mid); width: 0%; transition: width 0.3s; }
+.card-box { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 34px 24px; margin: 0 18px 16px; text-align: center; }
+.card-word { font-size: 30px; font-weight: 700; color: var(--accent); }
+.blank-input { width: calc(100% - 36px); margin: 0 18px 10px; padding: 15px 18px; border: 2px solid var(--border2); border-radius: var(--radius-sm); font-size: 18px; font-weight: 700; text-align: center; outline: none; }
 .blank-input.correct { border-color: #16A34A; background: var(--green-bg); }
 .blank-input.wrong { border-color: #DC2626; background: var(--red-bg); }
-
-.quiz-opts { padding: 0 18px; }
-.qopt {
-  padding: 15px 18px;
-  background: var(--surface); border: 1px solid var(--border2);
-  border-radius: var(--radius-sm); margin-bottom: 8px;
-  cursor: pointer; font-size: 15px; font-weight: 500;
-  font-family: var(--font);
-  transition: all 0.12s;
-}
-.qopt:active { transform: scale(0.99); }
+.qopt { padding: 15px 18px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; font-weight: 500; transition: all 0.12s; margin: 0 18px 8px; }
 .qopt.correct { background: var(--green-bg); color: var(--green); border-color: #86EFAC; }
 .qopt.wrong { background: var(--red-bg); color: var(--red); border-color: #FCA5A5; }
-.qopt.reveal { background: var(--yellow-bg); color: var(--yellow); border-color: #FDE047; }
-
-.action-btn {
-  display: block; width: calc(100% - 36px); margin: 0 18px;
-  padding: 15px; background: var(--accent); color: #fff;
-  border: none; border-radius: var(--radius-sm);
-  font-size: 15px; font-weight: 700; font-family: var(--font);
-  cursor: pointer; transition: opacity 0.15s;
-}
-.action-btn:active { opacity: 0.85; }
-.action-btn.secondary {
-  background: var(--surface2); color: var(--text2); margin-top: 8px;
-}
-.feedback-row {
-  min-height: 28px; text-align: center; font-size: 13px;
-  color: var(--text3); margin: 0 18px 8px;
-}
-
-/* ── result screen ── */
-.result-hero {
-  text-align: center; padding: 30px 18px 20px;
-}
-.result-pct { font-size: 56px; font-weight: 700; color: var(--accent); letter-spacing: -2px; }
-.result-sub { font-size: 16px; color: var(--text2); margin-top: 4px; }
-.result-table { width: calc(100% - 36px); margin: 0 18px; border-collapse: collapse; font-size: 14px; }
-.result-table td { padding: 11px 10px; border-bottom: 1px solid var(--border); }
-.result-table .ok { color: var(--green); font-weight: 700; }
-.result-table .ng { color: var(--red); font-weight: 700; }
-
-/* ── manage screen ── */
-.tab-pills {
-  display: flex; gap: 4px; padding: 14px 18px 12px;
-}
-.pill {
-  flex: 1; padding: 8px 0; text-align: center;
-  border-radius: var(--radius-xs); border: 1px solid var(--border2);
-  background: var(--surface2); font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: var(--font); color: var(--text2);
-  transition: all 0.12s;
-}
-.pill.active {
-  background: var(--surface); color: var(--text); border-color: var(--border2);
-  box-shadow: var(--shadow);
-}
-
-.add-card {
-  margin: 0 18px 14px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px;
-}
-.add-card label {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--text3);
-  display: block; margin-bottom: 5px; margin-top: 12px;
-}
-.add-card label:first-child { margin-top: 0; }
-.add-card input, .add-card textarea {
-  width: 100%; padding: 10px 13px;
-  border: 1px solid var(--border2); border-radius: var(--radius-xs);
-  font-size: 14px; font-family: var(--font);
-  background: var(--bg); color: var(--text);
-  outline: none; transition: border-color 0.15s;
-}
-.add-card input:focus, .add-card textarea:focus {
-  border-color: var(--accent-mid);
-}
-.add-card textarea { resize: vertical; min-height: 100px; }
-.add-card .btn-row { display: flex; gap: 6px; margin-top: 13px; }
-.add-card .btn-row button {
-  flex: 1; padding: 11px;
-  border-radius: var(--radius-xs); font-size: 13px; font-weight: 700;
-  font-family: var(--font); cursor: pointer; border: none; transition: opacity 0.15s;
-}
-.btn-add { background: var(--accent); color: #fff; }
-.btn-clear { background: var(--surface2); color: var(--text2); }
-
-.bulk-hint {
-  margin: 0 18px 10px;
-  padding: 10px 13px;
-  background: var(--accent-bg); border-radius: var(--radius-xs);
-  font-size: 12px; color: var(--text2); line-height: 1.6;
-}
-.bulk-hint strong { color: var(--accent); }
-.bulk-hint code {
-  background: rgba(99,102,241,0.12); padding: 1px 5px;
-  border-radius: 4px; font-size: 11px;
-}
-
-.word-list-header {
-  padding: 4px 18px 8px;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--text3);
-}
-.word-row {
-  display: flex; align-items: center;
-  padding: 11px 18px;
-  border-bottom: 1px solid var(--border);
-  gap: 10px;
-}
-.word-row:last-child { border-bottom: none; }
-.w-en { font-size: 14px; font-weight: 700; flex: 1; }
-.w-ko { font-size: 13px; color: var(--text2); flex: 1.2; }
-.w-del {
-  background: none; border: none; cursor: pointer;
-  color: var(--text3); font-size: 15px; padding: 4px 6px;
-  border-radius: var(--radius-xs);
-}
-.w-del:active { background: var(--red-bg); color: var(--red); }
-.empty-msg {
-  text-align: center; padding: 36px 20px;
-  font-size: 14px; color: var(--text3);
-}
-.list-card {
-  margin: 0 18px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); overflow: hidden;
-}
-
-/* ── voice toggle ── */
-.voice-row {
-  display: flex; gap: 6px; padding: 0 18px 16px;
-}
-.voice-btn {
-  flex: 1; padding: 9px;
-  border-radius: var(--radius-xs); border: 1px solid var(--border2);
-  background: var(--surface); font-size: 12px; font-weight: 700;
-  font-family: var(--font); cursor: pointer; color: var(--text2);
-  transition: all 0.12s;
-}
+.action-btn { display: block; width: calc(100% - 36px); margin: 0 18px; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; cursor: pointer; }
+.add-card { margin: 0 18px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.add-card input { width: 100%; padding: 10px 13px; border: 1px solid var(--border2); border-radius: var(--radius-xs); margin-bottom: 10px; font-family: inherit; }
+.word-row { display: flex; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.w-en { font-weight: 700; flex: 1; }
+.w-ko { color: var(--text2); flex: 1.2; font-size: 14px; }
+.voice-row { display: flex; gap: 6px; padding: 0 18px 16px; }
+.voice-btn { flex: 1; padding: 9px; border-radius: var(--radius-xs); border: 1px solid var(--border2); background: var(--surface); font-size: 12px; font-weight: 700; cursor: pointer; }
 .voice-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-/* ── answer reveal ── */
-.answer-box {
-  display: none; margin: 0 18px 10px;
-  padding: 14px; background: var(--yellow-bg);
-  border-radius: var(--radius-sm); text-align: center;
-  border: 1px solid #FDE047;
-}
-.answer-box h3 { font-size: 20px; font-weight: 700; color: var(--yellow); }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; align-items: flex-end; justify-content: center; }
+.modal-content { background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 430px; padding: 28px 24px 40px; }
+.google-btn { display: flex; align-items: center; gap: 10px; justify-content: center; width: 100%; padding: 14px; background: #fff; border: 1px solid #ddd; border-radius: 12px; font-weight: 600; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="app">
-
-<!-- ══════════════ HOME ══════════════ -->
-<div id="homeScreen" class="screen active">
-  <div class="home-header">
-    <h1>단어장 ✦</h1>
-    <p id="homeSub">오늘도 열심히!</p>
-  </div>
-
-  <div class="sync-bar">
-    <div class="sync-dot offline" id="syncDot"></div>
-    <span class="sync-label" id="syncLabel">Google 계정 연결 필요</span>
-    <button class="sync-action" id="syncAction" onclick="handleSyncAction()">연결하기</button>
-  </div>
-
-  <div class="voice-row">
-    <button class="voice-btn active" id="vf" onclick="setVoice('female')">👩 여성 음성</button>
-    <button class="voice-btn" id="vm" onclick="setVoice('male')">👨 남성 음성</button>
-  </div>
-
-  <div class="week-scroll" id="weekTabs"></div>
-
-  <div class="menu-grid">
-    <div class="mc mc-hl mc-full" onclick="startTest()">
-      <div class="mc-icon">🔥</div>
-      <div class="mc-label">10분 실전 테스트</div>
-      <div class="mc-desc">랜덤 유형 · 사운드 포함</div>
+    <!-- HOME -->
+    <div id="homeScreen" class="screen active">
+        <div class="home-header">
+            <h1>단어장 ✦</h1>
+            <p id="homeSub" style="color:var(--text2); font-size:13px;">오늘도 열심히!</p>
+        </div>
+        <div class="sync-bar">
+            <div class="sync-dot" id="syncDot"></div>
+            <span class="sync-label" id="syncLabel">로그인 필요</span>
+            <button class="sync-action" id="syncAction" onclick="handleSyncAction()">연결</button>
+        </div>
+        <div class="voice-row">
+            <button class="voice-btn active" id="vf" onclick="setVoice('female')">👩 여성 음성</button>
+            <button class="voice-btn" id="vm" onclick="setVoice('male')">👨 남성 음성</button>
+        </div>
+        <div class="week-scroll" id="weekTabs"></div>
+        <div class="menu-grid">
+            <div class="mc mc-hl mc-full" onclick="startTest()">
+                <div class="mc-icon">🔥</div>
+                <div class="mc-label">10분 실전 테스트</div>
+                <div class="mc-desc">랜덤 유형 · 사운드 포함</div>
+            </div>
+            <div class="mc mc-full" style="background:var(--accent-bg);" onclick="startMode('super')">
+                <div class="mc-icon">🚀</div>
+                <div class="mc-label">플래시 주관식</div>
+                <div class="mc-desc">한/영 랜덤 · 직접 입력</div>
+            </div>
+            <div class="mc" onclick="startMode('quiz')">
+                <div class="mc-icon">✅</div>
+                <div class="mc-label">객관식 퀴즈</div>
+                <div class="mc-desc">뜻 고르기</div>
+            </div>
+            <div class="mc" onclick="startReview()">
+                <div class="mc-icon">🔁</div>
+                <div class="mc-label">오답 복습</div>
+                <div class="mc-desc" id="wrongLabel">0개</div>
+            </div>
+            <div class="mc mc-full" onclick="goManage()">
+                <div class="mc-icon">📝</div>
+                <div class="mc-label">단어 관리</div>
+                <div class="mc-desc" id="wordLabel">관리 및 추가</div>
+            </div>
+        </div>
     </div>
-    <div class="mc mc-full" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('super')">
-      <div class="mc-icon">🚀</div>
-      <div class="mc-label">플래시 주관식</div>
-      <div class="mc-desc">한/영 랜덤 · 직접 입력</div>
+
+    <!-- GAME -->
+    <div id="gameScreen" class="screen">
+        <div class="topbar">
+            <button class="back-btn" onclick="confirmExit()">←</button>
+            <h2 id="gameTitle">학습 중</h2>
+            <span id="gameCounter" style="font-size:12px; color:var(--text3); font-weight:700"></span>
+        </div>
+        <div class="prog-track"><div id="gameBar" class="prog-fill"></div></div>
+        <div id="gameArea"></div>
     </div>
-    <div class="mc" onclick="startMode('quiz')">
-      <div class="mc-icon">✅</div>
-      <div class="mc-label">객관식 퀴즈</div>
-      <div class="mc-desc">뜻 고르기</div>
+
+    <!-- RESULT -->
+    <div id="resultScreen" class="screen">
+        <div class="topbar"><h2>결과</h2></div>
+        <div style="text-align:center; padding:30px 0;">
+            <div id="resPct" style="font-size:56px; font-weight:700; color:var(--accent);">0%</div>
+            <div id="resScore" style="color:var(--text2);"></div>
+        </div>
+        <button class="action-btn" onclick="showHome()">홈으로</button>
     </div>
-    <div class="mc" onclick="startReview()">
-      <div class="mc-icon">🔁</div>
-      <div class="mc-label">오답 복습</div>
-      <div class="mc-desc" id="wrongLabel">틀린 단어 없음</div>
+
+    <!-- MANAGE -->
+    <div id="manageScreen" class="screen">
+        <div class="topbar">
+            <button class="back-btn" onclick="showHome()">←</button>
+            <h2>단어 관리</h2>
+            <button class="sync-action" onclick="addWeekModal()">+ 주차</button>
+        </div>
+        <div class="week-scroll" id="manageTabs"></div>
+        <div class="add-card">
+            <input id="inEn" placeholder="English Word" onkeydown="if(event.key==='Enter')document.getElementById('inKo').focus()">
+            <input id="inKo" placeholder="뜻 (쉼표로 구분)" onkeydown="if(event.key==='Enter')addWord()">
+            <button class="action-btn" onclick="addWord()" style="width:100%; margin:0;">추가하기</button>
+        </div>
+        <div id="wordListEl"></div>
     </div>
-    <div class="mc mc-full" onclick="goManage()">
-      <div class="mc-icon">📝</div>
-      <div class="mc-label">단어 관리</div>
-      <div class="mc-desc" id="wordLabel">단어 추가 · 편집 · 삭제</div>
+
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom:10px;">Google 동기화</h2>
+            <p style="font-size:14px; color:var(--text2); margin-bottom:20px;">단어장을 안전하게 클라우드에 백업합니다.</p>
+            <button class="google-btn" onclick="startGoogleAuth()">Google로 로그인</button>
+            <button onclick="closeAuthModal()" style="width:100%; margin-top:10px; background:none; border:none; color:var(--text3); cursor:pointer;">나중에</button>
+        </div>
     </div>
-  </div>
-</div>
-
-<!-- ══════════════ GAME ══════════════ -->
-<div id="gameScreen" class="screen">
-  <div class="topbar">
-    <button class="back-btn" onclick="confirmExit()">←</button>
-    <h2 id="gameTitle">학습 중</h2>
-    <span id="gameCounter" style="font-size:12px; color:var(--text3); font-weight:700"></span>
-  </div>
-  <div class="prog-track"><div id="gameBar" class="prog-fill"></div></div>
-  <div id="gameArea"></div>
-</div>
-
-<!-- ══════════════ RESULT ══════════════ -->
-<div id="resultScreen" class="screen">
-  <div class="topbar"><h2>결과</h2></div>
-  <div class="result-hero">
-    <div class="result-pct" id="resPct">0%</div>
-    <div class="result-sub" id="resScore"></div>
-  </div>
-  <table class="result-table" id="reportTable"></table>
-  <div style="height:16px"></div>
-  <button class="action-btn" onclick="showHome()">홈으로</button>
-  <div style="height:32px"></div>
-</div>
-
-<!-- ══════════════ MANAGE ══════════════ -->
-<div id="manageScreen" class="screen">
-  <div class="topbar">
-    <button class="back-btn" onclick="showHome()">←</button>
-    <h2 id="manageTitle">단어 관리</h2>
-    <button class="sync-action" onclick="addWeekModal()" style="font-size:13px; color:var(--accent)">+ 주차</button>
-  </div>
-
-  <div class="week-scroll" id="manageTabs" style="padding-top:12px"></div>
-
-  <div class="tab-pills">
-    <button class="pill active" id="p1" onclick="switchTab(1)">한 개씩 추가</button>
-    <button class="pill" id="p2" onclick="switchTab(2)">일괄 붙여넣기</button>
-  </div>
-
-  <!-- single add -->
-  <div id="panel1">
-    <div class="add-card">
-      <label>영어 단어</label>
-      <input id="inEn" type="text" placeholder="예: perseverance" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('inKo').focus()">
-      <label>한국어 뜻 <span style="font-weight:400;text-transform:none;letter-spacing:0">(여러 뜻은 쉼표로)</span></label>
-      <input id="inKo" type="text" placeholder="예: 인내, 끈기" onkeydown="if(event.key==='Enter')addWord()">
-      <div class="btn-row">
-        <button class="btn-clear" onclick="clearAddForm()">초기화</button>
-        <button class="btn-add" onclick="addWord()">추가하기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- bulk add -->
-  <div id="panel2" style="display:none">
-    <div class="bulk-hint">
-      <strong>붙여넣기 형식</strong><br>
-      한 줄에 단어 하나. 영어와 뜻을 <code>탭</code> 또는 <code>,</code>으로 구분.<br>
-      예) <code>apple, 사과</code> · <code>banana	바나나</code>
-    </div>
-    <div class="add-card">
-      <textarea id="bulkTA" placeholder="apple, 사과&#10;banana, 바나나&#10;cherry, 체리"></textarea>
-      <div class="btn-row" style="margin-top:10px">
-        <button class="btn-add" style="flex:1;padding:11px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;background:var(--accent);color:#fff" onclick="bulkAdd()">일괄 추가</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="word-list-header" id="listHeader"></div>
-  <div class="list-card">
-    <div id="wordListEl"></div>
-  </div>
-  <div style="height:40px"></div>
-</div>
-
-<!-- ══════════════ GOOGLE AUTH MODAL ══════════════ -->
-<div id="authModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; display:none; align-items:flex-end; justify-content:center;">
-  <div style="background:var(--surface); border-radius: 24px 24px 0 0; width:100%; max-width:430px; padding:28px 24px 40px;">
-    <div style="text-align:center; margin-bottom:20px">
-      <div style="font-size:36px; margin-bottom:10px">☁️</div>
-      <h2 style="font-size:20px; font-weight:700; margin-bottom:6px">Google 계정으로 동기화</h2>
-      <p style="font-size:13px; color:var(--text2); line-height:1.6">
-        단어장을 Gmail에 저장해서<br>아이폰, PC 등 모든 기기에서 사용하세요.
-      </p>
-    </div>
-    <button class="google-btn" onclick="startGoogleAuth()">
-      <svg class="google-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Google로 로그인
-    </button>
-    <button onclick="closeAuthModal()" style="display:block;width:100%;margin-top:10px;padding:12px;background:none;border:none;font-size:14px;color:var(--text3);cursor:pointer;font-family:var(--font)">나중에</button>
-  </div>
 </div>
 
 <script>
-/* ════════════════════════════════
-   CONFIG — Google OAuth
-   1) https://console.cloud.google.com 에서 프로젝트 생성
-   2) Gmail API 활성화
-   3) OAuth 2.0 클라이언트 ID 생성 (웹 애플리케이션)
-   4) 아래 CLIENT_ID 에 붙여넣기
-   5) 승인된 JavaScript 출처에 이 파일을 서빙하는 주소 추가
-════════════════════════════════ */
+/* ───── CONFIG & STATE ───── */
 const CLIENT_ID = '662327660376-ipf335iurhi0hmnfnphh47tiv0m2vhcc.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
-const LABEL_NAME = 'VOCAB_APP_BACKUP';
 const DRAFT_SUBJECT = '[VocabApp-Backup-v1]';
 
-/* ════ STATE ════ */
 let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = localStorage.getItem('currentWeek') || Object.keys(allWeeks)[0] || '';
 let gToken = localStorage.getItem('gToken') || '';
-let currentWords = [], idx = 0, score = 0, isTest = false;
-let lock = false, modeType = '', reports = [], qSide = 'en';
+let currentWords = [], idx = 0, score = 0, modeType = '', isTest = false;
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
 
-/* ════ AUDIO ════ */
-const AC = new (window.AudioContext || window.webkitAudioContext)();
-function playBeep(ok) {
-  if (AC.state === 'suspended') AC.resume();
-  const now = AC.currentTime;
-  if (ok) {
-    [523.25, 659.25, 783.99].forEach((f, i) => {
-      const o = AC.createOscillator(), g = AC.createGain();
-      o.frequency.setValueAtTime(f, now + i*0.1);
-      g.gain.setValueAtTime(0, now+i*0.1);
-      g.gain.linearRampToValueAtTime(0.08, now+i*0.1+0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, now+i*0.1+0.12);
-      o.connect(g); g.connect(AC.destination);
-      o.start(now+i*0.1); o.stop(now+i*0.1+0.12);
-    });
-  } else {
-    const o = AC.createOscillator(), g = AC.createGain();
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now);
-    g.gain.setValueAtTime(0.08, now);
-    g.gain.linearRampToValueAtTime(0.001, now+0.45);
-    o.connect(g); g.connect(AC.destination);
-    o.start(); o.stop(now+0.45);
-  }
-}
+/* ───── UTILS ───── */
+const persist = () => {
+    localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks));
+    localStorage.setItem('vocabWrong', JSON.stringify(wrongWords));
+    localStorage.setItem('currentWeek', currentWeek);
+};
 
-/* ════ TTS ════ */
-function speak(text) {
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.88; u.pitch = 1.1;
-  const vv = speechSynthesis.getVoices();
-  const pick = selectedVoice === 'female'
-    ? vv.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || (v.name.includes('Google') && !v.name.toLowerCase().includes('male'))))
-    : vv.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.toLowerCase().includes('male')));
-  if (pick) u.voice = pick;
-  speechSynthesis.speak(u);
-}
-speechSynthesis.onvoiceschanged = () => {};
+const showScreen = id => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+};
 
-function setVoice(t) {
-  selectedVoice = t; localStorage.setItem('prefVoice', t);
-  document.getElementById('vf').classList.toggle('active', t==='female');
-  document.getElementById('vm').classList.toggle('active', t==='male');
-}
+const showHome = () => { renderHome(); showScreen('homeScreen'); };
+const goManage = () => { renderManage(); showScreen('manageScreen'); };
+const confirmExit = () => { if(confirm('종료할까요?')) showHome(); };
 
-/* ════ PERSIST ════ */
-function persist() {
-  localStorage.setItem('vocabWeeks', JSON.stringify(allWeeks));
-  localStorage.setItem('vocabWrong', JSON.stringify(wrongWords));
-  localStorage.setItem('currentWeek', currentWeek);
+/* ───── TTS & SOUND ───── */
+function speak(t) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US'; u.rate = 0.9;
+    const voices = speechSynthesis.getVoices();
+    u.voice = voices.find(v => v.name.includes(selectedVoice === 'female' ? 'Google US English' : 'Google UK English Male')) || voices[0];
+    speechSynthesis.speak(u);
 }
+function setVoice(v) { selectedVoice = v; localStorage.setItem('prefVoice', v); renderHome(); }
 
-/* ════ SCREEN NAV ════ */
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-function showHome() { renderHome(); showScreen('homeScreen'); }
-function goManage() { renderManage(); showScreen('manageScreen'); }
-function confirmExit() { if (confirm('학습을 종료할까요?')) showHome(); }
-
-/* ════ HOME ════ */
+/* ───── HOME & MANAGE ───── */
 function renderHome() {
-  renderWeekTabs('weekTabs');
-  const ww = currentWeek ? (allWeeks[currentWeek] || []) : [];
-  document.getElementById('wordLabel').textContent = `현재 ${ww.length}개 단어`;
-  document.getElementById('wrongLabel').textContent = wrongWords.length ? `틀린 단어 ${wrongWords.length}개` : '틀린 단어 없음';
-  document.getElementById('homeSub').textContent = currentWeek ? `${currentWeek} · ${ww.length}개 단어` : '주차를 선택하거나 추가하세요';
-  updateSyncUI();
+    const ww = currentWeek ? (allWeeks[currentWeek] || []) : [];
+    document.getElementById('wordLabel').textContent = `현재 ${ww.length}개 단어`;
+    document.getElementById('wrongLabel').textContent = `${wrongWords.length}개 복습 대기`;
+    document.getElementById('homeSub').textContent = currentWeek ? `${currentWeek} 학습 중` : '주차를 선택하세요';
+    renderTabs('weekTabs');
+    updateSyncUI();
 }
 
-function renderWeekTabs(containerId) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = '';
-  Object.keys(allWeeks).forEach(w => {
-    const b = document.createElement('button');
-    b.className = 'week-chip' + (w === currentWeek ? ' active' : '');
-    b.textContent = `${w} (${allWeeks[w].length})`;
-    b.onclick = () => { currentWeek = w; persist(); renderHome(); if (containerId==='manageTabs') renderManage(); };
-    el.appendChild(b);
-  });
-  const add = document.createElement('button');
-  add.className = 'week-chip new-chip';
-  add.textContent = '+ 추가';
-  add.onclick = addWeekModal;
-  el.appendChild(add);
+function renderTabs(id) {
+    const el = document.getElementById(id); el.innerHTML = '';
+    Object.keys(allWeeks).forEach(w => {
+        const b = document.createElement('button');
+        b.className = 'week-chip' + (w === currentWeek ? ' active' : '');
+        b.textContent = w;
+        b.onclick = () => { currentWeek = w; persist(); renderHome(); if(id==='manageTabs') renderManage(); };
+        el.appendChild(b);
+    });
 }
 
 function addWeekModal() {
-  const name = prompt('주차 이름 (예: 1주차, Day 1~5)');
-  if (!name || !name.trim()) return;
-  const n = name.trim();
-  if (allWeeks[n]) { alert('이미 있는 이름입니다.'); return; }
-  allWeeks[n] = []; currentWeek = n; persist();
-  renderHome(); renderManage();
+    const n = prompt('새 주차 이름:');
+    if(!n) return;
+    allWeeks[n] = []; currentWeek = n; persist(); renderManage();
 }
 
-/* ════ MANAGE ════ */
-let activeTab = 1;
 function renderManage() {
-  document.getElementById('manageTitle').textContent = currentWeek ? `${currentWeek} 관리` : '단어 관리';
-  renderWeekTabs('manageTabs');
-  renderWordList();
-}
-function switchTab(t) {
-  activeTab = t;
-  document.getElementById('p1').classList.toggle('active', t===1);
-  document.getElementById('p2').classList.toggle('active', t===2);
-  document.getElementById('panel1').style.display = t===1 ? '' : 'none';
-  document.getElementById('panel2').style.display = t===2 ? '' : 'none';
-}
-function clearAddForm() {
-  document.getElementById('inEn').value = '';
-  document.getElementById('inKo').value = '';
-  document.getElementById('inEn').focus();
-}
-function addWord() {
-  if (!currentWeek) { addWeekModal(); return; }
-  const en = document.getElementById('inEn').value.trim();
-  const ko = document.getElementById('inKo').value.trim();
-  if (!en || !ko) { alert('영어와 뜻을 모두 입력하세요.'); return; }
-  if (allWeeks[currentWeek].find(w => w.en.toLowerCase() === en.toLowerCase())) {
-    if (!confirm(`"${en}" 이 이미 있습니다. 중복 추가할까요?`)) return;
-  }
-  allWeeks[currentWeek].push({ en, ko });
-  persist(); clearAddForm(); renderWordList(); renderHome();
-  scheduleSyncSave();
-}
-function bulkAdd() {
-  if (!currentWeek) { addWeekModal(); return; }
-  const raw = document.getElementById('bulkTA').value.trim();
-  if (!raw) return;
-  let count = 0;
-  raw.split('\n').forEach(line => {
-    line = line.trim(); if (!line) return;
-    const sep = line.includes('\t') ? '\t' : ',';
-    const parts = line.split(sep);
-    if (parts.length >= 2) {
-      const en = parts[0].trim();
-      const ko = parts.slice(1).join(',').trim();
-      if (en && ko) { allWeeks[currentWeek].push({ en, ko }); count++; }
-    }
-  });
-  if (!count) { alert('파싱할 수 있는 단어가 없습니다.\n형식을 확인하세요.'); return; }
-  persist(); document.getElementById('bulkTA').value = '';
-  renderWordList(); renderHome();
-  alert(`✅ ${count}개 단어가 추가되었습니다.`);
-  scheduleSyncSave();
-}
-function deleteWord(i) {
-  if (!confirm('이 단어를 삭제하시겠습니까?')) return;
-  allWeeks[currentWeek].splice(i, 1);
-  persist(); renderWordList(); renderHome(); scheduleSyncSave();
-}
-function renderWordList() {
-  const words = currentWeek ? (allWeeks[currentWeek] || []) : [];
-  document.getElementById('listHeader').textContent = words.length ? `${currentWeek} · ${words.length}개` : '';
-  const el = document.getElementById('wordListEl');
-  if (!words.length) { el.innerHTML = '<div class="empty-msg">단어가 없습니다.<br>위에서 추가해보세요!</div>'; return; }
-  el.innerHTML = words.map((w, i) =>
-    `<div class="word-row">
-      <span class="w-en">${w.en}</span>
-      <span class="w-ko">${w.ko}</span>
-      <button class="w-del" onclick="deleteWord(${i})">✕</button>
-    </div>`
-  ).join('');
+    renderTabs('manageTabs');
+    const words = allWeeks[currentWeek] || [];
+    const el = document.getElementById('wordListEl');
+    el.innerHTML = words.map((w, i) => `
+        <div class="word-row">
+            <span class="w-en">${w.en}</span>
+            <span class="w-ko">${w.ko}</span>
+            <button onclick="deleteWord(${i})" style="border:none; background:none; color:var(--red);">✕</button>
+        </div>`).join('');
 }
 
-/* ════ GAME ENGINE ════ */
-function startMode(mode) {
-  if (!currentWeek || !allWeeks[currentWeek]?.length) { alert('단어가 없습니다.'); return; }
-  isTest = false; modeType = mode;
-  currentWords = shuffle([...allWeeks[currentWeek]]);
-  idx = 0; score = 0; reports = []; lock = false;
-  showScreen('gameScreen'); renderQ();
+function addWord() {
+    const en = document.getElementById('inEn').value.trim();
+    const ko = document.getElementById('inKo').value.trim();
+    if(!en || !ko) return;
+    allWeeks[currentWeek].push({en, ko});
+    document.getElementById('inEn').value = ''; document.getElementById('inKo').value = '';
+    persist(); renderManage(); scheduleSyncSave();
 }
-function startTest() {
-  if (!currentWeek || !allWeeks[currentWeek]?.length) { alert('단어가 없습니다.'); return; }
-  isTest = true; modeType = 'mix';
-  currentWords = shuffle([...allWeeks[currentWeek]]);
-  idx = 0; score = 0; reports = []; lock = false;
-  showScreen('gameScreen'); renderQ();
+
+function deleteWord(i) {
+    allWeeks[currentWeek].splice(i,1); persist(); renderManage(); scheduleSyncSave();
 }
+
+/* ───── GAME LOGIC ───── */
+function startMode(m) {
+    if(!currentWeek || !allWeeks[currentWeek]?.length) return alert('단어가 없습니다.');
+    modeType = m; isTest = false; currentWords = [...allWeeks[currentWeek]].sort(() => Math.random() - 0.5);
+    idx = 0; score = 0; showScreen('gameScreen'); renderQ();
+}
+function startTest() { modeType = 'mix'; isTest = true; startMode('mix'); }
 function startReview() {
-  if (!wrongWords.length) { alert('틀린 단어가 없습니다! 🎉'); return; }
-  isTest = false; modeType = 'super';
-  currentWords = shuffle([...wrongWords]);
-  idx = 0; score = 0; reports = []; lock = false;
-  showScreen('gameScreen'); renderQ();
+    if(!wrongWords.length) return alert('틀린 단어가 없습니다.');
+    modeType = 'super'; isTest = false; currentWords = [...wrongWords];
+    idx = 0; score = 0; showScreen('gameScreen'); renderQ();
 }
-function shuffle(a) { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a; }
 
 function renderQ() {
-  lock = false;
-  const w = currentWords[idx];
-  document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100)+'%';
-  document.getElementById('gameTitle').textContent = { super:'플래시 주관식', quiz:'객관식 퀴즈', mix:'실전 테스트' }[modeType] || '학습';
-  document.getElementById('gameCounter').textContent = `${idx+1} / ${currentWords.length}`;
-  const area = document.getElementById('gameArea');
-  area.innerHTML = '';
-  const mode = modeType==='mix' ? (Math.random()>0.5?'super':'quiz') : modeType;
-
-  if (mode === 'super') {
-    qSide = Math.random() > 0.5 ? 'en' : 'ko';
-    const question = qSide==='en' ? w.en : w.ko;
-    const hint = qSide==='en' ? '한국어 뜻을 입력하세요' : '영어 단어를 입력하세요';
-    area.innerHTML = `
-      <div class="card-box">
-        <div class="card-hint">${hint}</div>
-        <div class="card-word">${question}${qSide==='en'?`<button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button>`:''}</div>
-      </div>
-      <div class="feedback-row" id="fb"></div>
-      <input class="blank-input" id="si" type="text" placeholder="정답 입력" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
-      <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
-      <div class="answer-box" id="ansBox">
-        <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답</div>
-        <h3>${qSide==='en'?w.ko:w.en}</h3>
-        <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
-      </div>`;
-    setTimeout(() => document.getElementById('si')?.focus(), 200);
-    if (qSide==='en') speak(w.en);
-  } else {
-    const pool = allWeeks[currentWeek] || [];
-    const distractors = shuffle(pool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.ko);
-    const opts = shuffle([...new Set([w.ko, ...distractors])]);
-    area.innerHTML = `
-      <div class="card-box">
-        <div class="card-hint">뜻을 고르세요</div>
-        <div class="card-word">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
-      </div>
-      <div class="quiz-opts" id="qOpts"></div>`;
-    const el = document.getElementById('qOpts');
-    opts.forEach(o => {
-      const b = document.createElement('div');
-      b.className = 'qopt'; b.textContent = o;
-      if (o===w.ko) b.id = 'correctOpt';
-      b.onclick = () => {
-        if (lock) return; lock = true;
-        const ok = o===w.ko;
-        b.classList.add(ok?'correct':'wrong');
-        if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
-        playBeep(ok); handleAns(ok, o);
-      };
-      el.appendChild(b);
-    });
-    speak(w.en);
-  }
-}
-
-function checkSuper() {
-  if (lock) return;
-  const inp = document.getElementById('si');
-  const val = inp.value.trim().toLowerCase();
-  const w = currentWords[idx];
-  const ok = qSide==='en'
-    ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(a => val.includes(a) || a.includes(val))
-    : val === w.en.toLowerCase();
-  if (ok) {
-    lock = true; inp.classList.add('correct'); playBeep(true);
-    if (qSide==='ko') speak(w.en);
-    handleAns(true, val);
-  } else {
-    inp.classList.add('wrong'); playBeep(false);
-    if (!wrongWords.find(x=>x.en===w.en)) { wrongWords.push(w); persist(); }
-    setTimeout(() => {
-      inp.classList.remove('wrong'); inp.value = ''; inp.focus();
-      document.getElementById('fb').innerHTML =
-        `<button onclick="showHint()" style="color:var(--text3);font-size:12px;background:none;border:none;cursor:pointer;text-decoration:underline">정답 보기</button>`;
-    }, 1100);
-  }
-}
-function showHint() {
-  document.getElementById('checkBtn').style.display='none';
-  document.getElementById('si').disabled = true;
-  const ab = document.getElementById('ansBox'); if (ab) ab.style.display='block';
-  speak(currentWords[idx].en);
-}
-function handleAns(ok, userAns='') {
-  const w = currentWords[idx];
-  if (ok) { score++; wrongWords = wrongWords.filter(x=>x.en!==w.en); }
-  else { if (!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); }
-  persist(); renderHome();
-  if (isTest) reports.push({ en: w.en, ko: w.ko, ok });
-  setTimeout(moveNext, ok ? 750 : 1800);
-}
-function moveNext() {
-  idx++;
-  if (idx < currentWords.length) { renderQ(); }
-  else if (isTest) { showResult(); }
-  else { showHome(); }
-}
-function showResult() {
-  showScreen('resultScreen');
-  const pct = Math.round(score/currentWords.length*100);
-  document.getElementById('resPct').textContent = pct+'%';
-  document.getElementById('resScore').textContent = `${score} / ${currentWords.length} 정답`;
-  document.getElementById('reportTable').innerHTML = reports.map(r =>
-    `<tr><td>${r.en}</td><td style="color:var(--text2);font-size:12px">${r.ko}</td><td class="${r.ok?'ok':'ng'}">${r.ok?'○':'×'}</td></tr>`
-  ).join('');
-}
-
-/* ════════════════════════════════
-   GOOGLE OAUTH + GMAIL SYNC
-════════════════════════════════ */
-let tokenClient = null;
-
-function initGoogleAuth() {
-  if (typeof google === 'undefined') return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: async (resp) => {
-      if (resp.error) { setSyncUI('error', '로그인 실패'); return; }
-      gToken = resp.access_token;
-      localStorage.setItem('gToken', gToken);
-      closeAuthModal();
-      setSyncUI('loading', '첫 동기화 중...');
-      await pullFromGmail();
+    const w = currentWords[idx];
+    document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100) + '%';
+    document.getElementById('gameCounter').textContent = `${idx+1}/${currentWords.length}`;
+    const area = document.getElementById('gameArea'); area.innerHTML = '';
+    
+    const curMode = modeType === 'mix' ? (Math.random() > 0.5 ? 'super' : 'quiz') : modeType;
+    
+    if(curMode === 'super') {
+        const isEn = Math.random() > 0.5;
+        area.innerHTML = `
+            <div class="card-box">
+                <div style="font-size:12px; color:var(--text3); margin-bottom:8px;">${isEn?'뜻을 입력하세요':'영단어를 입력하세요'}</div>
+                <div class="card-word">${isEn?w.en:w.ko}</div>
+            </div>
+            <input class="blank-input" id="si" placeholder="정답 입력" onkeyup="if(event.key==='Enter')checkSuper('${isEn?'en':'ko'}')">
+            <button class="action-btn" onclick="checkSuper('${isEn?'en':'ko'}')">정답 확인</button>`;
+        if(isEn) speak(w.en);
+        setTimeout(() => document.getElementById('si').focus(), 300);
+    } else {
+        const opts = [w.ko, ...([...allWeeks[currentWeek]].filter(x=>x.ko!==w.ko).map(x=>x.ko).sort(()=>Math.random()-0.5).slice(0,3))].sort(()=>Math.random()-0.5);
+        area.innerHTML = `<div class="card-box"><div class="card-word">${w.en}</div></div><div id="qOpts"></div>`;
+        opts.forEach(o => {
+            const b = document.createElement('div'); b.className = 'qopt'; b.textContent = o;
+            b.onclick = () => {
+                if(o === w.ko) { b.classList.add('correct'); score++; nextQ(); }
+                else { b.classList.add('wrong'); if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); nextQ(); }
+            };
+            document.getElementById('qOpts').appendChild(b);
+        });
+        speak(w.en);
     }
-  });
 }
 
-function handleSyncAction() {
-  if (!gToken) { showAuthModal(); return; }
-  scheduleSyncSave();
+function checkSuper(type) {
+    const val = document.getElementById('si').value.trim().toLowerCase();
+    const w = currentWords[idx];
+    const ok = type==='en' ? w.ko.toLowerCase().includes(val) : w.en.toLowerCase() === val;
+    if(ok) { document.getElementById('si').classList.add('correct'); score++; }
+    else { document.getElementById('si').classList.add('wrong'); if(!wrongWords.find(x=>x.en===w.en)) wrongWords.push(w); }
+    setTimeout(nextQ, 800);
 }
 
-function showAuthModal() {
-  const m = document.getElementById('authModal');
-  m.style.display = 'flex';
-}
-function closeAuthModal() {
-  document.getElementById('authModal').style.display = 'none';
-}
-function startGoogleAuth() {
-  if (!tokenClient) {
-    alert('Google API가 로드되지 않았습니다.\nCLIENT_ID를 설정했는지 확인하세요.');
-    return;
-  }
-  tokenClient.requestAccessToken();
+function nextQ() {
+    idx++; persist();
+    if(idx < currentWords.length) renderQ();
+    else if(isTest) showResult();
+    else showHome();
 }
 
-function updateSyncUI() {
-  if (!gToken) { setSyncUI('offline', 'Google 계정 연결 필요'); return; }
-  const last = localStorage.getItem('lastSync');
-  if (last) {
-    const d = new Date(last);
-    setSyncUI('ok', `마지막 동기화: ${d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);
-  } else {
-    setSyncUI('ok', 'Google 계정 연결됨');
-  }
-}
-function setSyncUI(state, msg) {
-  const dot = document.getElementById('syncDot');
-  const label = document.getElementById('syncLabel');
-  const btn = document.getElementById('syncAction');
-  dot.className = 'sync-dot' + (state==='ok'?' ':state==='loading'?' loading':state==='error'?' error':' offline');
-  label.textContent = msg;
-  btn.textContent = state==='offline' ? '연결하기' : '동기화';
+function showResult() {
+    showScreen('resultScreen');
+    const pct = Math.round(score/currentWords.length*100);
+    document.getElementById('resPct').textContent = pct + '%';
+    document.getElementById('resScore').textContent = `${currentWords.length}문제 중 ${score}개 정답`;
 }
 
-let syncTimer = null;
-function scheduleSyncSave() {
-  if (!gToken) return;
-  setSyncUI('loading', '저장 중...');
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(pushToGmail, 1500);
+/* ───── SYNC LOGIC (Gmail) ───── */
+let tokenClient;
+function initGoogleAuth() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/gmail.modify',
+        callback: (resp) => {
+            if(resp.access_token) {
+                gToken = resp.access_token; localStorage.setItem('gToken', gToken);
+                closeAuthModal(); pullFromGmail();
+            }
+        }
+    });
 }
+
+const handleSyncAction = () => { if(!gToken) document.getElementById('authModal').style.display='flex'; else pushToGmail(); };
+const closeAuthModal = () => document.getElementById('authModal').style.display='none';
+const startGoogleAuth = () => tokenClient.requestAccessToken();
+
+function updateSyncUI(state = 'ok') {
+    const dot = document.getElementById('syncDot');
+    dot.className = 'sync-dot ' + (gToken ? 'ok' : '');
+    document.getElementById('syncLabel').textContent = gToken ? '동기화 활성화됨' : '로그인 필요';
+}
+
+let syncTimer;
+function scheduleSyncSave() { if(gToken) { clearTimeout(syncTimer); syncTimer = setTimeout(pushToGmail, 2000); } }
 
 async function pushToGmail() {
-  if (!gToken) return;
-  try {
-    c// 현재 raw 생성 방식 테스트
-const body = JSON.stringify({ test: '한글테스트', ts: Date.now() });
-const encoded = btoa(unescape(encodeURIComponent(body)));
-const mailContent = `From: me\r\nTo: me\r\nSubject: [VocabApp-Backup-v1]\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n` + encoded;
-const raw = btoa(unescape(encodeURIComponent(mailContent)))
-  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    if(!gToken) return;
+    const dot = document.getElementById('syncDot'); dot.classList.add('loading');
+    try {
+        const syncData = { weeks: allWeeks, wrong: wrongWords, ts: Date.now() };
+        const toBase64 = (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const encodedData = toBase64(JSON.stringify(syncData));
+        
+        const email = [`Subject: ${DRAFT_SUBJECT}`, `MIME-Version: 1.0`, `Content-Type: text/plain; charset="UTF-8"`, ``, encodedData].join('\r\n');
+        const raw = btoa(unescape(encodeURIComponent(email))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-console.log('raw 생성 성공:', raw.substring(0, 50));
-
-// 실제 API 호출
-fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem('gToken')}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ message: { raw } })
-}).then(r => {
-  console.log('상태코드:', r.status);
-  return r.json();
-}).then(d => console.log('응답:', d));
-    
-    // 기존 백업 드래프트 찾아 삭제
-    const search = await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}&maxResults=5`);
-    if (search.drafts) {
-      for (const d of search.drafts) {
-        await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}`, 'DELETE');
-      }
-    }
-    // 새 드래프트 저장
-    await gFetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', 'POST', { message: { raw } });
-    localStorage.setItem('lastSync', new Date().toISOString());
-    setSyncUI('ok', `동기화 완료 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);
-  } catch(e) {
-    if (e.status === 401) { gToken = ''; localStorage.removeItem('gToken'); setSyncUI('offline','세션 만료 · 재연결 필요'); }
-    else setSyncUI('error', '동기화 실패');
-  }
+        // 기존 백업 삭제
+        const search = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}`, {
+            headers: { Authorization: `Bearer ${gToken}` }
+        }).then(r => r.json());
+        
+        if(search.drafts) {
+            for(const d of search.drafts) {
+                await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}`, {
+                    method: 'DELETE', headers: { Authorization: `Bearer ${gToken}` }
+                });
+            }
+        }
+        // 새 백업 저장
+        await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+            method: 'POST', headers: { Authorization: `Bearer ${gToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: { raw } })
+        });
+        dot.classList.remove('loading');
+    } catch(e) { dot.classList.add('error'); }
 }
 
 async function pullFromGmail() {
-  if (!gToken) return;
-  setSyncUI('loading', 'Gmail에서 불러오는 중...');
-  try {
-    const search = await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}&maxResults=1`);
-    if (!search.drafts?.length) { setSyncUI('ok', '새 기기 — 로컬 데이터 사용'); return; }
-    const draft = await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${search.drafts[0].id}`);
-    const rawB64 = draft.message?.payload?.body?.data || draft.message?.payload?.parts?.[0]?.body?.data || '';
-    if (!rawB64) { setSyncUI('ok', '백업 데이터 없음'); return; }
-    const decoded = decodeURIComponent(escape(atob(rawB64.replace(/-/g,'+').replace(/_/g,'/'))));
-    const data = JSON.parse(decoded);
-    // 로컬보다 클라우드가 더 최신이면 덮어쓰기
-    const localTs = parseInt(localStorage.getItem('lastSyncTs') || '0');
-    if (data.ts > localTs) {
-      allWeeks = data.weeks; wrongWords = data.wrong || [];
-      currentWeek = Object.keys(allWeeks)[0] || '';
-      persist();
-      localStorage.setItem('lastSyncTs', data.ts);
+    try {
+        const search = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}`, {
+            headers: { Authorization: `Bearer ${gToken}` }
+        }).then(r => r.json());
+        
+        if(!search.drafts) return;
+        const draft = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${search.drafts[0].id}`, {
+            headers: { Authorization: `Bearer ${gToken}` }
+        }).then(r => r.json());
+        
+        const b64 = draft.message.payload.body.data || draft.message.payload.parts[0].body.data;
+        const decodedEmail = decodeURIComponent(escape(atob(b64.replace(/-/g, '+').replace(/_/g, '/'))));
+        const lastLine = decodedEmail.split('\r\n').pop();
+        const data = JSON.parse(decodeURIComponent(escape(atob(lastLine))));
+        
+        if(data.ts > (parseInt(localStorage.getItem('lastSyncTs') || 0))) {
+            allWeeks = data.weeks; wrongWords = data.wrong;
+            localStorage.setItem('lastSyncTs', data.ts); persist(); renderHome();
+        }
+    } catch(e) { console.error(e); }
+}
+
+/* ───── INIT ───── */
+window.onload = () => {
+    if(!Object.keys(allWeeks).length) {
+        allWeeks['1주차'] = [{en:'ambitious', ko:'야망 있는'}, {en:'perseverance', ko:'인내'}];
+        currentWeek = '1주차'; persist();
     }
-    localStorage.setItem('lastSync', new Date().toISOString());
-    setSyncUI('ok', `동기화 완료 · ${Object.values(allWeeks).flat().length}개 단어`);
     renderHome();
-  } catch(e) {
-    if (e.status === 401) { gToken=''; localStorage.removeItem('gToken'); setSyncUI('offline','세션 만료'); }
-    else setSyncUI('error', '불러오기 실패');
-  }
-}
-
-async function gFetch(url, method='GET', body=null) {
-  const opts = { method, headers: { Authorization: `Bearer ${gToken}`, 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  if (method === 'DELETE') return {};
-  if (!r.ok) { const err = new Error(); err.status = r.status; throw err; }
-  return r.json();
-}
-
-/* ════ INIT ════ */
-function init() {
-  // 샘플 데이터 (처음 실행 시)
-  if (!Object.keys(allWeeks).length) {
-    allWeeks['1주차'] = [
-      { en: 'ambitious', ko: '야망 있는, 의욕적인' },
-      { en: 'perseverance', ko: '인내, 끈기' },
-      { en: 'eloquent', ko: '유창한, 웅변적인' },
-      { en: 'diligent', ko: '부지런한, 성실한' },
-      { en: 'tenacious', ko: '끈질긴, 완강한' }
-    ];
-    currentWeek = '1주차';
-    persist();
-  }
-  renderHome();
-  // Google API 로드
-  if (CLIENT_ID && !CLIENT_ID.includes('여기에')) {
     const s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client';
     s.onload = initGoogleAuth;
     document.head.appendChild(s);
-    // 이미 토큰 있으면 자동 동기화
-    if (gToken) pullFromGmail();
-  }
-}
-init();
+    if(gToken) pullFromGmail();
+};
 </script>
 </body>
 </html>
