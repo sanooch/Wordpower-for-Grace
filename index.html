@@ -863,10 +863,9 @@ function closeAuthModal() {
 }
 function startGoogleAuth() {
   if (!tokenClient) {
-    alert('Google API가 로드되지 않았습니다.\nCLIENT_ID를 확인하세요.');
+    alert('Google API 로드 안됨');
     return;
   }
-  // 명시적 로그인: 계정 선택 팝업 표시
   tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
