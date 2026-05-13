@@ -915,12 +915,27 @@ function scheduleSyncSave() {
 async function pushToGmail() {
   if (!gToken) return;
   try {
-    const body = JSON.stringify({ weeks: allWeeks, wrong: wrongWords, ts: Date.now() });
-    const encoded = btoa(unescape(encodeURIComponent(body)));
-   // 수정
-const mailContent = `From: me\r\nTo: me\r\nSubject: ${DRAFT_SUBJECT}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n` + encoded;
+    c// 현재 raw 생성 방식 테스트
+const body = JSON.stringify({ test: '한글테스트', ts: Date.now() });
+const encoded = btoa(unescape(encodeURIComponent(body)));
+const mailContent = `From: me\r\nTo: me\r\nSubject: [VocabApp-Backup-v1]\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n` + encoded;
 const raw = btoa(unescape(encodeURIComponent(mailContent)))
   .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+
+console.log('raw 생성 성공:', raw.substring(0, 50));
+
+// 실제 API 호출
+fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('gToken')}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ message: { raw } })
+}).then(r => {
+  console.log('상태코드:', r.status);
+  return r.json();
+}).then(d => console.log('응답:', d));
     
     // 기존 백업 드래프트 찾아 삭제
     const search = await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}&maxResults=5`);
