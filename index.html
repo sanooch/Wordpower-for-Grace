@@ -138,8 +138,8 @@ body {
 }
 .card-hint { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 .card-word {
-  font-size: 28px; font-weight: 700; color: var(--accent);
-  letter-spacing: -0.5px; line-height: 1.3;
+  font-size: 26px; font-weight: 700; color: var(--accent);
+  letter-spacing: -0.5px; line-height: 1.4;
 }
 .tts-btn {
   background: none; border: none; cursor: pointer;
@@ -227,8 +227,8 @@ body {
 
 <div id="homeScreen" class="screen active">
   <div class="home-header">
-    <h1>교재 핵심 단어장 ✦</h1>
-    <p id="homeSub">총 36개 단어</p>
+    <h1>교재 필수 단어장 ✦</h1>
+    <p id="homeSub">총 36개 어휘 배치 완료</p>
   </div>
 
   <div class="voice-row">
@@ -237,25 +237,30 @@ body {
   </div>
 
   <div class="menu-grid">
-    <div class="mc mc-hl mc-full" onclick="startTest()">
-      <div class="mc-icon">🔥</div>
-      <div class="mc-label">10분 실전 테스트</div>
-      <div class="mc-desc">랜덤 유형 · 영➔한/한➔영 전체 혼합</div>
-    </div>
-    <div class="mc mc-full" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('super')">
+    <div class="mc mc-hl" onclick="startMode('super_en_ko')">
       <div class="mc-icon">🚀</div>
-      <div class="mc-label">플래시 주관식</div>
-      <div class="mc-desc">한/영 랜덤 · 둘 중 하나만 맞춰도 정답</div>
+      <div class="mc-label">주관식 (영➔한)</div>
+      <div class="mc-desc">뜻 직접 입력 (둘 다 허용)</div>
     </div>
-    <div class="mc mc-full" onclick="startMode('quiz')">
+    <div class="mc mc-hl" onclick="startMode('super_ko_en')">
+      <div class="mc-icon">✍️</div>
+      <div class="mc-label">주관식 (한➔영)</div>
+      <div class="mc-desc">스펠링 직접 타이핑</div>
+    </div>
+    <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_en_ko')">
       <div class="mc-icon">✅</div>
-      <div class="mc-label">객관식 퀴즈</div>
-      <div class="mc-desc">영➔한 / 한➔영 랜덤 출제</div>
+      <div class="mc-label">객관식 (영➔한)</div>
+      <div class="mc-desc">단어 보고 맞는 뜻 고르기</div>
+    </div>
+    <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_ko_en')">
+      <div class="mc-icon">🔤</div>
+      <div class="mc-label">객관식 (한➔영)</div>
+      <div class="mc-desc">뜻 보고 맞는 단어 고르기</div>
     </div>
     <div class="mc mc-full" onclick="goManage()">
       <div class="mc-icon">📝</div>
       <div class="mc-label">전체 단어 목록 보기</div>
-      <div class="mc-desc">이번 단원 36단어 뜻 확인</div>
+      <div class="mc-desc">이번 단원 36단어 전체 구성 확인</div>
     </div>
   </div>
 </div>
@@ -300,7 +305,6 @@ body {
 <script>
 /* ════ 신규 교재 사진 4장 속 단어 36개 데이터 ════ */
 const currentWordsConst = [
-  // 사진 1 (01~10)
   { en: 'neuroscientist', ko: '신경 과학자, 뇌과학자' },
   { en: 'crucial', ko: '중대한, 아주 중요한' },
   { en: 'inability', ko: '무능, 할 수 없음' },
@@ -311,7 +315,6 @@ const currentWordsConst = [
   { en: 'assume', ko: '추정하다, 추측하다' },
   { en: 'victoriously', ko: '승리하여, 당당하게' },
   { en: 'ultimately', ko: '궁극적으로, 결국' },
-  // 사진 2 (11~20)
   { en: 'achieve', ko: '달성하다, 성취하다' },
   { en: 'disappear', ko: '사라지다' },
   { en: 'appealing', ko: '매력적인, 흥미를 끄는' },
@@ -322,7 +325,6 @@ const currentWordsConst = [
   { en: 'debt', ko: '빚, 부채' },
   { en: 'shortcoming', ko: '결점, 단점' },
   { en: 'necessity', ko: '필수품' },
-  // 사진 3 (01~09)
   { en: 'reveal', ko: '드러내다' },
   { en: 'venture', ko: '위험을 무릅쓰고 가다, 모험하다' },
   { en: 'exploration', ko: '탐사' },
@@ -332,7 +334,6 @@ const currentWordsConst = [
   { en: 'inquire', ko: '묻다' },
   { en: 'satisfactory', ko: '만족스러운' },
   { en: 'moral', ko: '도덕적인' },
-  // 사진 4 (10~17)
   { en: 'valid', ko: '유효한' },
   { en: 'notion', ko: '개념, 관념' },
   { en: 'deep-learning', ko: '딥 러닝, 심층 학습' },
@@ -343,7 +344,7 @@ const currentWordsConst = [
   { en: 'friction', ko: '마찰, 마찰력' }
 ];
 
-let currentWords = [], idx = 0, score = 0, isTest = false;
+let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
 
@@ -413,13 +414,7 @@ function renderWordList() {
 
 /* ════ GAME ENGINE ════ */
 function startMode(mode) {
-  isTest = false; modeType = mode;
-  currentWords = shuffle([...currentWordsConst]);
-  idx = 0; score = 0; reports = []; lock = false;
-  showScreen('gameScreen'); renderQ();
-}
-function startTest() {
-  isTest = true; modeType = 'mix';
+  modeType = mode;
   currentWords = shuffle([...currentWordsConst]);
   idx = 0; score = 0; reports = []; lock = false;
   showScreen('gameScreen'); renderQ();
@@ -433,89 +428,108 @@ function renderQ() {
   lock = false;
   const w = currentWords[idx];
   document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100)+'%';
-  document.getElementById('gameTitle').textContent = { super:'플래시 주관식', quiz:'객관식 퀴즈', mix:'실전 테스트' }[modeType] || '학습';
+  
+  // 모드별 타이틀 매칭
+  const titleMap = {
+    super_en_ko: '주관식 (영➔한)',
+    super_ko_en: '주관식 (한➔영)',
+    quiz_en_ko: '객관식 (영➔한)',
+    quiz_ko_en: '객관식 (한➔영)'
+  };
+  document.getElementById('gameTitle').textContent = titleMap[modeType] || '학습';
   document.getElementById('gameCounter').textContent = `${idx+1} / ${currentWords.length}`;
   const area = document.getElementById('gameArea');
   area.innerHTML = '';
-  
-  // 현재 출제할 서브 모드 확정 (믹스 모드면 주관식/객관식 반반)
-  const subMode = modeType==='mix' ? (Math.random()>0.5?'super':'quiz') : modeType;
 
-  if (subMode === 'super') {
-    // [주관식 모드] 영어➔뜻, 뜻➔영어 반반 출제
-    qSide = Math.random() > 0.5 ? 'en' : 'ko';
-    const question = qSide==='en' ? w.en : w.ko;
-    const hint = qSide==='en' ? '한국어 뜻을 입력하세요' : '영어 단어를 입력하세요';
+  // 1) 주관식 (영어 ➔ 한국어)
+  if (modeType === 'super_en_ko') {
+    qSide = 'en';
     area.innerHTML = `
       <div class="card-box">
-        <div class="card-hint">${hint}</div>
-        <div class="card-word">${question}${qSide==='en'?`<button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button>`:''}</div>
+        <div class="card-hint">한국어 뜻을 입력하세요</div>
+        <div class="card-word">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
       </div>
       <div class="feedback-row" id="fb"></div>
       <input class="blank-input" id="si" type="text" placeholder="정답 입력" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
       <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
       <div class="answer-box" id="ansBox">
         <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답</div>
-        <h3>${qSide==='en'?w.ko:w.en}</h3>
+        <h3>${w.ko}</h3>
         <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
       </div>`;
     setTimeout(() => document.getElementById('si')?.focus(), 200);
-    if (qSide==='en') speak(w.en);
-  } else {
-    // [★ 핵심 수정: 객관식 모드] 영➔한 또는 한➔영 랜덤 결정
-    qSide = Math.random() > 0.5 ? 'en' : 'ko';
+    speak(w.en);
+  }
+  // 2) 주관식 (한국어 ➔ 영어)
+  else if (modeType === 'super_ko_en') {
+    qSide = 'ko';
+    area.innerHTML = `
+      <div class="card-box">
+        <div class="card-hint">영어 단어를 입력하세요</div>
+        <div class="card-word" style="font-size:22px; font-weight:500;">${w.ko}</div>
+      </div>
+      <div class="feedback-row" id="fb"></div>
+      <input class="blank-input" id="si" type="text" placeholder="정답 입력" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
+      <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
+      <div class="answer-box" id="ansBox">
+        <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답</div>
+        <h3>${w.en}</h3>
+        <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
+      </div>`;
+    setTimeout(() => document.getElementById('si')?.focus(), 200);
+  }
+  // 3) 객관식 (영어 ➔ 한국어)
+  else if (modeType === 'quiz_en_ko') {
     const pool = currentWordsConst;
-    
-    if (qSide === 'en') {
-      // 1) 영어 단어가 출제되고 한글 뜻 4개 중 고르는 기본 형태
-      const distractors = shuffle(pool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.ko);
-      const opts = shuffle([...new Set([w.ko, ...distractors])]);
-      area.innerHTML = `
-        <div class="card-box">
-          <div class="card-hint">올바른 뜻을 고르세요</div>
-          <div class="card-word">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
-        </div>
-        <div class="quiz-opts" id="qOpts"></div>`;
-      const el = document.getElementById('qOpts');
-      opts.forEach(o => {
-        const b = document.createElement('div');
-        b.className = 'qopt'; b.textContent = o;
-        if (o===w.ko) b.id = 'correctOpt';
-        b.onclick = () => {
-          if (lock) return; lock = true;
-          const ok = o===w.ko;
-          b.classList.add(ok?'correct':'wrong');
-          if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
-          playBeep(ok); handleAns(ok, o);
-        };
-        el.appendChild(b);
-      });
-      speak(w.en);
-    } else {
-      // 2) 한글 뜻이 출제되고 영어 단어 4개 중 고르는 형태 (새로 추가)
-      const distractors = shuffle(pool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.en);
-      const opts = shuffle([...new Set([w.en, ...distractors])]);
-      area.innerHTML = `
-        <div class="card-box">
-          <div class="card-hint">올바른 단어를 고르세요</div>
-          <div class="card-word" style="font-size:22px; font-weight:500;">${w.ko}</div>
-        </div>
-        <div class="quiz-opts" id="qOpts"></div>`;
-      const el = document.getElementById('qOpts');
-      opts.forEach(o => {
-        const b = document.createElement('div');
-        b.className = 'qopt'; b.textContent = o;
-        if (o===w.en) b.id = 'correctOpt';
-        b.onclick = () => {
-          if (lock) return; lock = true;
-          const ok = o===w.en;
-          b.classList.add(ok?'correct':'wrong');
-          if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
-          playBeep(ok); if(ok) speak(w.en); handleAns(ok, o);
-        };
-        el.appendChild(b);
-      });
-    }
+    const distractors = shuffle(pool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.ko);
+    const opts = shuffle([...new Set([w.ko, ...distractors])]);
+    area.innerHTML = `
+      <div class="card-box">
+        <div class="card-hint">올바른 뜻을 고르세요</div>
+        <div class="card-word">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
+      </div>
+      <div class="quiz-opts" id="qOpts"></div>`;
+    const el = document.getElementById('qOpts');
+    opts.forEach(o => {
+      const b = document.createElement('div');
+      b.className = 'qopt'; b.textContent = o;
+      if (o===w.ko) b.id = 'correctOpt';
+      b.onclick = () => {
+        if (lock) return; lock = true;
+        const ok = o===w.ko;
+        b.classList.add(ok?'correct':'wrong');
+        if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
+        playBeep(ok); handleAns(ok, o);
+      };
+      el.appendChild(b);
+    });
+    speak(w.en);
+  }
+  // 4) 객관식 (한국어 ➔ 영어)
+  else if (modeType === 'quiz_ko_en') {
+    const pool = currentWordsConst;
+    const distractors = shuffle(pool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.en);
+    const opts = shuffle([...new Set([w.en, ...distractors])]);
+    area.innerHTML = `
+      <div class="card-box">
+        <div class="card-hint">올바른 단어를 고르세요</div>
+        <div class="card-word" style="font-size:22px; font-weight:500;">${w.ko}</div>
+      </div>
+      <div class="quiz-opts" id="qOpts"></div>`;
+    const el = document.getElementById('qOpts');
+    opts.forEach(o => {
+      const b = document.createElement('div');
+      b.className = 'qopt'; b.textContent = o;
+      if (o===w.en) b.id = 'correctOpt';
+      b.onclick = () => {
+        if (lock) return; lock = true;
+        const ok = o===w.en;
+        b.classList.add(ok?'correct':'wrong');
+        if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
+        playBeep(ok); if(ok) speak(w.en); handleAns(ok, o);
+      };
+      el.appendChild(b);
+    });
   }
 }
 
