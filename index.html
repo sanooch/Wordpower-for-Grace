@@ -1044,7 +1044,31 @@ function init() {
   document.head.appendChild(s);
 }
 
-init();
+/* ════ INIT ════ */
+function init() {
+  // ★ 이 줄을 추가해서 가은이 폰의 옛날 캐시 데이터를 강제로 날려버립니다.
+  localStorage.clear(); 
+
+  if (!Object.keys(allWeeks).length) {
+    allWeeks['과학 1주차'] = [
+      { en: 'disaster', ko: '재해' },
+      { en: 'unpredictable', ko: '예측할 수 없는' },
+      // ... (중간 단어들 그대로 유지) ...
+      { en: 'blizzard', ko: '심한 눈보라' }
+    ];
+    currentWeek = '과학 1주차';
+    persist();
+  }
+  renderHome();
+
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.defer = true;
+  s.onload = initGoogleAuth;
+  s.onerror = () => setSyncUI('offline', 'Google API 로드 실패');
+  document.head.appendChild(s);
+}
 </script>
 </body>
 </html>
