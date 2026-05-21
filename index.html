@@ -19,8 +19,8 @@
   --text: #1C1B18;
   --text2: #6B6860;
   --text3: #A8A69F;
-  --accent: #3730A3;
-  --accent-bg: #EEEEFF;
+  --accent: #4338CA;
+  --accent-bg: #EEF2F6;
   --accent-mid: #6366F1;
   --green: #166534;
   --green-bg: #DCFCE7;
@@ -227,8 +227,8 @@ body {
 
 <div id="homeScreen" class="screen active">
   <div class="home-header">
-    <h1>과학 단어장 ✦</h1>
-    <p id="homeSub">총 38개 단어</p>
+    <h1>교재 핵심 단어장 ✦</h1>
+    <p id="homeSub">총 36개 단어</p>
   </div>
 
   <div class="voice-row">
@@ -245,7 +245,7 @@ body {
     <div class="mc mc-full" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('super')">
       <div class="mc-icon">🚀</div>
       <div class="mc-label">플래시 주관식</div>
-      <div class="mc-desc">한/영 랜덤 · 직접 입력</div>
+      <div class="mc-desc">한/영 랜덤 · 둘 중 하나만 맞춰도 정답</div>
     </div>
     <div class="mc mc-full" onclick="startMode('quiz')">
       <div class="mc-icon">✅</div>
@@ -255,7 +255,7 @@ body {
     <div class="mc mc-full" onclick="goManage()">
       <div class="mc-icon">📝</div>
       <div class="mc-label">전체 단어 목록 보기</div>
-      <div class="mc-desc">이번 주차 38단어 확인</div>
+      <div class="mc-desc">교재 전체 뜻 구성 확인</div>
     </div>
   </div>
 </div>
@@ -276,8 +276,9 @@ body {
     <div class="result-pct" id="resPct">0%</div>
     <div class="result-sub" id="resScore"></div>
   </div>
-  <table class="result-table" id="reportTable"></table>
-  <div style="height:16px"></div>
+  <div class="list-card" style="margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+    <table class="result-table" id="reportTable"></table>
+  </div>
   <button class="action-btn" onclick="showHome()">홈으로</button>
   <div style="height:32px"></div>
 </div>
@@ -287,8 +288,8 @@ body {
     <button class="back-btn" onclick="showHome()">←</button>
     <h2>단어 목록</h2>
   </div>
-  <div class="word-list-header">과학 필수 어휘 (38개)</div>
-  <div class="list-card">
+  <div class="word-list-header">교재 전체 단어 (36개)</div>
+  <div class="list-card" style="max-height: 70vh; overflow-y: auto;">
     <div id="wordListEl"></div>
   </div>
   <div style="height:40px"></div>
@@ -297,46 +298,49 @@ body {
 </div>
 
 <script>
-/* ════ DATA (구글 시트 연동 없이 고정 배치) ════ */
+/* ════ 신규 교재 사진 4장 속 단어 (슬래시/쉼표 모두 포함 데이터) ════ */
 const currentWordsConst = [
-  { en: 'disaster', ko: '재해' },
-  { en: 'unpredictable', ko: '예측할 수 없는' },
-  { en: 'destructive', ko: '파괴적인' },
-  { en: 'earthquake', ko: '지진' },
-  { en: 'fault', ko: '단층' },
-  { en: 'friction', ko: '마찰' },
-  { en: 'seismic wave', ko: '지진파' },
-  { en: 'epicenter', ko: '진앙지' },
-  { en: 'volcanic eruption', ko: '화산 폭발' },
-  { en: 'magma', ko: '마그마' },
-  { en: 'lava', ko: '용암' },
-  { en: 'chamber', ko: '축적된 공간' },
-  { en: 'ash', ko: '화산재' },
-  { en: 'acid rain', ko: '산성비' },
-  { en: 'landslide', ko: '산사태' },
-  { en: 'trigger', ko: '촉발시키다' },
-  { en: 'slope', ko: '비탈면' },
-  { en: 'gravity', ko: '중력' },
-  { en: 'debris', ko: '쓰레기' },
-  { en: 'tsunami', ko: '지진해일' },
-  { en: 'displacement', ko: '배치' },
-  { en: 'ocean floor', ko: '해저' },
-  { en: 'shoreline', ko: '해안선' },
-  { en: 'evacuate', ko: '대피하다' },
-  { en: 'meteorologist', ko: '기상학자' },
-  { en: 'atmosphere', ko: '대기' },
-  { en: 'satellite', ko: '인공위성' },
-  { en: 'radar', ko: '레이더' },
-  { en: 'gauge', ko: '게이지' },
-  { en: 'barometer', ko: '기압계' },
-  { en: 'humidity', ko: '습도' },
-  { en: 'precipitation', ko: '강수량' },
-  { en: 'forecast', ko: '예측' },
-  { en: 'tornado', ko: '회오리바람' },
-  { en: 'hurricane', ko: '허리케인' },
-  { en: 'typhoon', ko: '태풍' },
-  { en: 'cyclone', ko: '사이클론' },
-  { en: 'blizzard', ko: '심한 눈보라' }
+  // 사진 1 (01~10)
+  { en: 'neuroscientist', ko: '신경 과학자, 뇌과학자' },
+  { en: 'crucial', ko: '중대한, 아주 중요한' },
+  { en: 'inability', ko: '무능, 할 수 없음' },
+  { en: 'rational', ko: '합리적인, 이성적인' },
+  { en: 'convey', ko: '나르다, 전달하다' },
+  { en: 'obvious', ko: '분명한, 명백한' },
+  { en: 'violate', ko: '위반하다, 침해하다' },
+  { en: 'assume', ko: '추정하다, 추측하다' },
+  { en: 'victoriously', ko: '승리하여, 당당하게' },
+  { en: 'ultimately', ko: '궁극적으로, 결국' },
+  // 사진 2 (11~20)
+  { en: 'achieve', ko: '달성하다, 성취하다' },
+  { en: 'disappear', ko: '사라지다' },
+  { en: 'appealing', ko: '매력적인, 흥미를 끄는' },
+  { en: 'pave', ko: '포장하다, 덮다' },
+  { en: 'valuable', ko: '가치 있는, 귀중한' },
+  { en: 'anticipate', ko: '예상하다, 기대하다' },
+  { en: 'arise', ko: '생기다, 발생하다' },
+  { en: 'debt', ko: '빚, 부채' },
+  { en: 'shortcoming', ko: '결점, 단점' },
+  { en: 'necessity', ko: '필수품' },
+  // 사진 3 (01~09)
+  { en: 'reveal', ko: '드러내다' },
+  { en: 'venture', ko: '위험을 무릅쓰고 가다, 모험하다' },
+  { en: 'exploration', ko: '탐사' },
+  { en: 'territory', ko: '영토, 지역' },
+  { en: 'inadequate', ko: '불충분한, 부적절한' },
+  { en: 'intellectual', ko: '지식인, 지적인' },
+  { en: 'inquire', ko: '묻다' },
+  { en: 'satisfactory', ko: '만족스러운' },
+  { en: 'moral', ko: '도덕적인' },
+  // 사진 4 (10~17)
+  { en: 'valid', ko: '유효한' },
+  { en: 'notion', ko: '개념, 관념' },
+  { en: 'deep-learning', ko: '딥 러닝, 심층 학습' },
+  { en: 'limitations', ko: '한계, 제한' },
+  { en: 'instance', ko: '사례, 경우' },
+  { en: 'counteract', ko: '대응하다, 거스르다' },
+  { en: 'level', ko: '평평한, 수평의' },
+  { en: 'friction', ko: '마찰, 마찰력' }
 ];
 
 let currentWords = [], idx = 0, score = 0, isTest = false;
@@ -482,14 +486,24 @@ function renderQ() {
   }
 }
 
+/* ★ 다중 정답 검사 로직 보강 ★ */
 function checkSuper() {
   if (lock) return;
   const inp = document.getElementById('si');
   const val = inp.value.trim().toLowerCase();
   const w = currentWords[idx];
-  const ok = qSide==='en'
-    ? w.ko.split(',').map(s=>s.trim().toLowerCase()).some(a => val.includes(a) || a.includes(val))
-    : val === w.en.toLowerCase();
+  
+  let ok = false;
+  if (qSide === 'en') {
+    // 뜻이 쉼표(,)나 슬래시(/)로 나뉘어 있을 때 각각을 개별 정답 배열로 쪼갭니다.
+    const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim().toLowerCase());
+    
+    // 사용자가 쓴 입력값(val)이 정답 배열 중 하나와 완벽히 일치하거나 핵심어를 포함하면 정답 처리
+    ok = correctMeanings.some(a => val === a || val.includes(a) || a.includes(val));
+  } else {
+    ok = (val === w.en.toLowerCase());
+  }
+
   if (ok) {
     lock = true; inp.classList.add('correct'); playBeep(true);
     if (qSide==='ko') speak(w.en);
@@ -512,7 +526,7 @@ function showHint() {
 function handleAns(ok, userAns='') {
   const w = currentWords[idx];
   if (ok) { score++; }
-  if (isTest) reports.push({ en: w.en, ko: w.ko, ok });
+  reports.push({ en: w.en, ko: w.ko, ok });
   setTimeout(moveNext, ok ? 750 : 1800);
 }
 function moveNext() {
