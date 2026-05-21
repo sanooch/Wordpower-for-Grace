@@ -337,7 +337,6 @@ body {
 <body>
 <div id="app">
 
-<!-- HOME -->
 <div id="homeScreen" class="screen active">
   <div class="home-header">
     <h1>단어장 ✦</h1>
@@ -386,7 +385,6 @@ body {
   </div>
 </div>
 
-<!-- GAME -->
 <div id="gameScreen" class="screen">
   <div class="topbar">
     <button class="back-btn" onclick="confirmExit()">←</button>
@@ -397,7 +395,6 @@ body {
   <div id="gameArea"></div>
 </div>
 
-<!-- RESULT -->
 <div id="resultScreen" class="screen">
   <div class="topbar"><h2>결과</h2></div>
   <div class="result-hero">
@@ -410,7 +407,6 @@ body {
   <div style="height:32px"></div>
 </div>
 
-<!-- MANAGE -->
 <div id="manageScreen" class="screen">
   <div class="topbar">
     <button class="back-btn" onclick="showHome()">←</button>
@@ -459,7 +455,6 @@ body {
   <div style="height:40px"></div>
 </div>
 
-<!-- GOOGLE AUTH MODAL -->
 <div id="authModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999;">
   <div style="background:var(--surface); border-radius:24px 24px 0 0; width:100%; max-width:430px; padding:28px 24px 40px;">
     <div style="text-align:center; margin-bottom:20px">
@@ -490,7 +485,6 @@ let allWeeks = JSON.parse(localStorage.getItem('vocabWeeks') || '{}');
 let wrongWords = JSON.parse(localStorage.getItem('vocabWrong') || '[]');
 let currentWeek = localStorage.getItem('currentWeek') || Object.keys(allWeeks)[0] || '';
 
-// ★ 핵심 수정: gToken은 메모리에만 보관 (localStorage 저장 X)
 let gToken = '';
 
 let currentWords = [], idx = 0, score = 0, isTest = false;
@@ -800,11 +794,6 @@ function showResult() {
 
 /* ════════════════════════════════
    GOOGLE OAUTH + GMAIL SYNC
-   ★ 핵심 변경 사항:
-   1. gToken을 localStorage에 저장하지 않음
-   2. 페이지 로드 시 prompt:'' 로 자동 토큰 발급 시도
-   3. 401 발생 시 자동으로 토큰 재발급
-   4. raw 인코딩 방식 수정 (한글 대응)
 ════════════════════════════════ */
 let tokenClient = null;
 let isRefreshing = false;
@@ -817,14 +806,13 @@ function initGoogleAuth() {
     scope: SCOPES,
     callback: async (resp) => {
       if (resp.error) {
-        // 자동 로그인 실패 시 (계정 미선택 등) — UI만 업데이트
         if (resp.error === 'access_denied' || resp.error === 'user_logged_out') {
           setSyncUI('offline', 'Google 계정 연결 필요');
         }
         isRefreshing = false;
         return;
       }
-      gToken = resp.access_token; // 메모리에만 보관
+      gToken = resp.access_token;
       isRefreshing = false;
       closeAuthModal();
       setSyncUI('loading', '동기화 중...');
@@ -832,8 +820,6 @@ function initGoogleAuth() {
     }
   });
 
-  // 페이지 로드 시 자동 토큰 발급 시도 (팝업 없이)
-  // 이미 Google에 로그인되어 있으면 자동으로 토큰 발급됨
   silentTokenRefresh();
 }
 
@@ -841,8 +827,6 @@ function silentTokenRefresh() {
   if (!tokenClient || isRefreshing) return;
   isRefreshing = true;
   setSyncUI('loading', '자동 연결 중...');
-  // prompt: '' → 사용자 상호작용 없이 조용히 토큰 요청
-  // 실패해도 에러 팝업 없이 callback의 resp.error로 처리됨
   tokenClient.requestAccessToken({ prompt: '' });
 }
 
@@ -899,7 +883,6 @@ function scheduleSyncSave() {
   syncTimer = setTimeout(pushToGmail, 1500);
 }
 
-/* ★ 수정: 한글 포함 raw 인코딩 수정 */
 function buildRawEmail(bodyText) {
   const mail = [
     'From: me',
@@ -911,7 +894,6 @@ function buildRawEmail(bodyText) {
     btoa(unescape(encodeURIComponent(bodyText)))
   ].join('\r\n');
 
-  // URL-safe base64
   return btoa(unescape(encodeURIComponent(mail)))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -924,7 +906,6 @@ async function pushToGmail() {
     const bodyText = JSON.stringify({ weeks: allWeeks, wrong: wrongWords, ts: Date.now() });
     const raw = buildRawEmail(bodyText);
 
-    // 기존 드래프트 삭제
     const search = await gFetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/drafts?q=subject:${encodeURIComponent(DRAFT_SUBJECT)}&maxResults=5`
     );
@@ -933,14 +914,12 @@ async function pushToGmail() {
         await gFetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}`, 'DELETE');
       }
     }
-    // 새 드래프트 저장
     await gFetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', 'POST', { message: { raw } });
     localStorage.setItem('lastSync', new Date().toISOString());
     setSyncUI('ok', `동기화 완료 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);
   } catch(e) {
     if (e.status === 401) {
       gToken = '';
-      // 자동으로 토큰 재발급 시도
       silentTokenRefresh();
     } else {
       setSyncUI('error', '동기화 실패 · 재시도하려면 탭을 누르세요');
@@ -965,7 +944,6 @@ async function pullFromGmail() {
       || '';
     if (!rawB64) { setSyncUI('ok', '백업 데이터 없음'); return; }
 
-    // base64 → 문자열 → JSON 파싱
     const decoded = decodeURIComponent(escape(atob(rawB64.replace(/-/g,'+').replace(/_/g,'/'))));
     const data = JSON.parse(decoded);
 
@@ -983,7 +961,7 @@ async function pullFromGmail() {
   } catch(e) {
     if (e.status === 401) {
       gToken = '';
-      silentTokenRefresh(); // 자동 재발급 시도
+      silentTokenRefresh();
     } else {
       setSyncUI('error', '불러오기 실패');
     }
@@ -1009,22 +987,54 @@ async function gFetch(url, method='GET', body=null) {
   return r.json();
 }
 
-/* ════ INIT ════ */
+/* ════ INIT (★ 핵심 수정: 기본 단어를 과학 38단어로 교체) ════ */
 function init() {
   if (!Object.keys(allWeeks).length) {
-    allWeeks['1주차'] = [
-      { en: 'ambitious', ko: '야망 있는, 의욕적인' },
-      { en: 'perseverance', ko: '인내, 끈기' },
-      { en: 'eloquent', ko: '유창한, 웅변적인' },
-      { en: 'diligent', ko: '부지런한, 성실한' },
-      { en: 'tenacious', ko: '끈질긴, 완강한' }
+    allWeeks['과학 1주차'] = [
+      { en: 'disaster', ko: '재해' },
+      { en: 'unpredictable', ko: '예측할 수 없는' },
+      { en: 'destructive', ko: '파괴적인' },
+      { en: 'earthquake', ko: '지진' },
+      { en: 'fault', ko: '단층' },
+      { en: 'friction', ko: '마찰' },
+      { en: 'seismic wave', ko: '지진파' },
+      { en: 'epicenter', ko: '진앙지' },
+      { en: 'volcanic eruption', ko: '화산 폭발' },
+      { en: 'magma', ko: '마그마' },
+      { en: 'lava', ko: '용암' },
+      { en: 'chamber', ko: '축적된 공간' },
+      { en: 'ash', ko: '화산재' },
+      { en: 'acid rain', ko: '산성비' },
+      { en: 'landslide', ko: '산사태' },
+      { en: 'trigger', ko: '촉발시키다' },
+      { en: 'slope', ko: '비탈면' },
+      { en: 'gravity', ko: '중력' },
+      { en: 'debris', ko: '쓰레기' },
+      { en: 'tsunami', ko: '지진해일' },
+      { en: 'displacement', ko: '배치' },
+      { en: 'ocean floor', ko: '해저' },
+      { en: 'shoreline', ko: '해안선' },
+      { en: 'evacuate', ko: '대피하다' },
+      { en: 'meteorologist', ko: '기상학자' },
+      { en: 'atmosphere', ko: '대기' },
+      { en: 'satellite', ko: '인공위성' },
+      { en: 'radar', ko: '레이더' },
+      { en: 'gauge', ko: '게이지' },
+      { en: 'barometer', ko: '기압계' },
+      { en: 'humidity', ko: '습도' },
+      { en: 'precipitation', ko: '강수량' },
+      { en: 'forecast', ko: '예측' },
+      { en: 'tornado', ko: '회오리바람' },
+      { en: 'hurricane', ko: '허리케인' },
+      { en: 'typhoon', ko: '태풍' },
+      { en: 'cyclone', ko: '사이클론' },
+      { en: 'blizzard', ko: '심한 눈보라' }
     ];
-    currentWeek = '1주차';
+    currentWeek = '과학 1주차';
     persist();
   }
   renderHome();
 
-  // Google GSI 스크립트 동적 로드
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client';
   s.async = true;
