@@ -341,28 +341,22 @@ let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
 
-/* ════ 오디오 컨텍스트 웹 버그 방어 ════ */
 let AC = null;
 function initAudio() {
-  if (!AC) {
-    AC = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (AC && AC.state === 'suspended') {
-    AC.resume();
-  }
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC && AC.state === 'suspended') AC.resume();
 }
 
 function playBeep(ok) {
   try {
-    initAudio();
-    if (!AC) return;
+    initAudio(); if (!AC) return;
     const now = AC.currentTime;
     if (ok) {
       [523.25, 659.25, 783.99].forEach((f, i) => {
         const o = AC.createOscillator(), g = AC.createGain();
         o.frequency.setValueAtTime(f, now + i*0.1);
         g.gain.setValueAtTime(0, now+i*0.1);
-        g.gain.linearRampToValueAtTime(0.05, now+i*0.1+0.02);
+        g.gain.linearRampToValueAtTime(0.04, now+i*0.1+0.02);
         g.gain.exponentialRampToValueAtTime(0.001, now+i*0.1+0.12);
         o.connect(g); g.connect(AC.destination);
         o.start(now+i*0.1); o.stop(now+i*0.1+0.12);
@@ -370,32 +364,27 @@ function playBeep(ok) {
     } else {
       const o = AC.createOscillator(), g = AC.createGain();
       o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now);
-      g.gain.setValueAtTime(0.05, now);
+      g.gain.setValueAtTime(0.04, now);
       g.gain.linearRampToValueAtTime(0.001, now+0.45);
       o.connect(g); g.connect(AC.destination);
       o.start(); o.stop(now+0.45);
     }
-  } catch(e) { console.log("Beep error bypassed"); }
+  } catch(e){}
 }
 
-/* ════ TTS 모바일 잠김 방어 ════ */
 function speak(text) {
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.0;
-    
-    // 모바일 브라우저 락(Lock) 방지 리스너
-    u.onerror = (e) => { console.log("TTS play bypassed or locked"); };
-    
+    u.onerror = (e) => { console.log("TTS path locked"); };
     const vv = speechSynthesis.getVoices();
     const pick = selectedVoice === 'female'
       ? vv.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || (v.name.includes('Google') && !v.name.toLowerCase().includes('male'))))
       : vv.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.toLowerCase().includes('male')));
     if (pick) u.voice = pick;
-    
     window.speechSynthesis.speak(u);
-  } catch(e) { console.log("TTS execution error bypassed"); }
+  } catch(e){}
 }
 
 function renderTabs() {
@@ -407,7 +396,7 @@ function renderTabs() {
     btn.className = `tab-btn ${key === currentWeekTab ? 'active' : ''}`;
     btn.textContent = key;
     btn.onclick = () => {
-      initAudio(); // 터치하는 순간 오디오 락 풀기
+      initAudio();
       currentWeekTab = key;
       renderTabs();
       updateHomeSubCount();
@@ -450,7 +439,7 @@ function renderWordList() {
 }
 
 function startMode(mode) {
-  initAudio(); // 사용자 클릭 시 오디오 엔진 활성화
+  initAudio();
   modeType = mode;
   const activePool = wordData[currentWeekTab];
   currentWords = shuffle([...activePool]);
@@ -572,10 +561,10 @@ function cleanText(str) {
 }
 
 function checkSuper() {
-  if (lock) return;
+  if (lock) return; // 예약 대기 중 연타 방지 락
   const inp = document.getElementById('si');
   if(!inp) return;
-  const val = cleanText(inp.value);
+  const val = cleanText(inp.value.trim());
   const w = currentWords[idx];
   
   if (!val) return;
@@ -589,12 +578,20 @@ function checkSuper() {
   }
 
   if (ok) {
-    lock = true; inp.classList.add('correct'); playBeep(true);
-    handleAns(true, val);
+    lock = true; 
+    inp.classList.add('correct'); 
+    playBeep(true);
+    // ★ 타이머 혼선을 없애기 위해 handleAns를 호출하지 않고 여기서 즉시 타이밍 제어
+    reports.push({ en: w.en, ko: w.ko, ok: true });
+    score++;
+    setTimeout(moveNext, 600); 
   } else {
-    inp.classList.add('wrong'); playBeep(false);
+    lock = true; // 오답 발생 시 1초간 입력 방지 락
+    inp.classList.add('wrong'); 
+    playBeep(false);
     setTimeout(() => {
       inp.classList.remove('wrong'); inp.value = ''; inp.focus();
+      lock = false; // 락 해제
       const fb = document.getElementById('fb');
       if(fb) fb.innerHTML = `<button onclick="showHint()" style="color:var(--text3);font-size:12px;background:none;border:none;cursor:pointer;text-decoration:underline">정답 보기</button>`;
     }, 1000);
@@ -610,9 +607,8 @@ function showHint() {
 
 function handleAns(ok, userAns='') {
   const w = currentWords[idx];
-  if (ok) { score++; }
   reports.push({ en: w.en, ko: w.ko, ok });
-  setTimeout(moveNext, ok ? 750 : 1800);
+  setTimeout(moveNext, ok ? 600 : 1200);
 }
 
 function moveNext() {
@@ -631,7 +627,6 @@ function showResult() {
   ).join('');
 }
 
-// 초기 로딩 안전 구동 트리거
 window.onload = function() {
   renderTabs();
   updateHomeSubCount();
