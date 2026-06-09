@@ -268,7 +268,7 @@ body {
 
 <script>
 const wordData = {
-  "Ch.01 (이번주)": [
+  "Ch.01 (0611)": [
     { en: 'develop a sense', ko: '의식을 갖게 되다' },
     { en: 'refer to as sth', ko: '~라고 부르다' },
     { en: 'school admissions', ko: '학교 입학' },
@@ -293,7 +293,7 @@ const wordData = {
     { en: 'commercialization', ko: '상업화' },
     { en: 'ethical challenge', ko: '윤리적 도전' }
   ],
-  "Ch.06 (지난주)": [
+  "Ch.06 (0521)": [
     { en: 'prey on sth', ko: '잡아먹다, ~을 잡아먹다' },
     { en: 'increase sales', ko: '매출을 증가시키다' },
     { en: 'risk of sth', ko: '위험, ~의 위험' },
@@ -314,7 +314,7 @@ const wordData = {
     { en: 'be divided into sth', ko: '나뉘다, ~으로 나뉘다' },
     { en: 'spinal column', ko: '척추' }
   ],
-  "Ch.07~08 (과학)": [
+  "Ch.07~08 (0514)": [
     { en: 'make use of sth', ko: '이용하다, ~을 이용하다' },
     { en: 'get rid of sth', ko: '제거하다, ~을 제거하다' },
     { en: 'interfere with sth', ko: '방해하다, ~을 방해하다' },
@@ -560,7 +560,6 @@ function cleanText(str) {
   return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)]/g, '');
 }
 
-/* ★ 채점 루틴 완전 정밀화 (중복 리포팅 버그 척결) ★ */
 function checkSuper() {
   if (lock) return;
   const inp = document.getElementById('si');
@@ -582,8 +581,6 @@ function checkSuper() {
     lock = true; 
     inp.classList.add('correct'); 
     playBeep(true);
-    
-    // 이중 기록 오류 방지: handleAns 구조를 완전히 타도록 일원화
     handleAns(true, val);
   } else {
     lock = true; 
@@ -603,38 +600,42 @@ function showHint() {
   const si = document.getElementById('si'); if(si) si.disabled = true;
   const ab = document.getElementById('ansBox'); if (ab) ab.style.display='block';
   
-  // 힌트보기(정답보기)를 눌렀을 때는 오답(False) 리포트를 명확하게 한 번만 기록하도록 제어
-  if(!lock) {
-    lock = true;
+  // 힌트 사용 시 오답 데이터 강제 전달 후 채점 락 고정
+  if(reports.length <= idx) {
     handleAns(false, 'HINT_USED');
   }
 }
 
-/* ★ 단일 리포팅 통제 허브 ★ */
+/* ★ 채점 결과 보정 허브 (중복 연산 원천 제거) ★ */
 function handleAns(ok, userAns='') {
-  const w = currentWords[idx];
-  
-  // 중복 데이터 인입 차단 검증
+  // 현재 문제 인덱스에 데이터가 이미 들어가 있다면 중복 누적을 완벽히 무시
   if (reports.length > idx) return; 
+
+  reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: ok });
   
-  if (ok) { score++; }
-  reports.push({ en: w.en, ko: w.ko, ok: ok });
-  
-  // 주관식 힌트 노출이나 정오답 전환 연타 타이밍 완화 세팅
-  setTimeout(moveNext, ok ? 600 : 1000);
+  // 지연 오작동을 막기 위해 힌트 사용 시의 화면 전환 딜레이를 더 타이트하게 패치
+  setTimeout(moveNext, ok ? 600 : (userAns === 'HINT_USED' ? 999999 : 1000));
 }
 
 function moveNext() {
+  // 타이머나 엔터 연타가 겹쳐서 순간적으로 증가했을 때 락이 풀리기 전 인덱스 유효성 2차 방어
+  if (reports.length <= idx) return; 
+  
   idx++;
   if (idx < currentWords.length) { renderQ(); }
   else { showResult(); }
 }
 
+/* ★ 분모-분자 역학 계산식 로직 개조 ★ */
 function showResult() {
   showScreen('resultScreen');
-  const pct = Math.round(score/currentWords.length*100);
+  
+  // 외부 카운터 변수(score) 대신, 리포트 배열에 들어간 데이터 중 순수 true 개수만 걸러냄
+  const trueAnswersCount = reports.filter(r => r.ok).length;
+  const pct = Math.round((trueAnswersCount / currentWords.length) * 100);
+  
   document.getElementById('resPct').textContent = pct+'%';
-  document.getElementById('resScore').textContent = `${score} / ${currentWords.length} 정답`;
+  document.getElementById('resScore').textContent = `${trueAnswersCount} / ${currentWords.length} 정답`;
   document.getElementById('reportTable').innerHTML = reports.map(r =>
     `<tr><td>${r.en}</td><td style="color:var(--text2);font-size:12px">${r.ko}</td><td class="${r.ok?'ok':'ng'}">${r.ok?'○':'×'}</td></tr>`
   ).join('');
