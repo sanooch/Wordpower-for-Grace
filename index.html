@@ -237,12 +237,12 @@ body {
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_en_ko')">
       <div class="mc-icon">✅</div>
       <div class="mc-label">객관식 (영➔한)</div>
-      <div class="mc-desc">단어 뜻 4지선다 고르기</div>
+      <div class="mc-desc">뜻 고르기 · 10초 제한시간</div>
     </div>
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_ko_en')">
       <div class="mc-icon">🔤</div>
       <div class="mc-label">객관식 (한➔영)</div>
-      <div class="mc-desc">뜻을 보고 알맞은 단어 고르기</div>
+      <div class="mc-desc">단어 고르기 · 10초 제한시간</div>
     </div>
     <div class="mc mc-full" onclick="goManage()">
       <div class="mc-icon">📝</div>
@@ -364,6 +364,7 @@ let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
 let quizTimer = null; 
+let countdownTimer = null; // 🌟 10초 타임아웃 제한용 타이머 변수
 
 let AC = null;
 function initAudio() {
@@ -480,6 +481,8 @@ function shuffle(a) {
 function renderQ() {
   lock = false;
   if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
+  
   const w = currentWords[idx];
   const activePool = wordData[currentWeekTab];
   document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100)+'%';
@@ -535,7 +538,7 @@ function renderQ() {
     const opts = shuffle([...new Set([w.ko, ...distractors])]);
     area.innerHTML = `
       <div class="card-box">
-        <div class="card-hint">올바른 뜻을 고르세요</div>
+        <div class="card-hint" id="timerHint">올바른 뜻을 고르세요 (제한시간 10초)</div>
         <div class="card-word" style="font-size:24px;">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
       </div>
       <div class="quiz-opts" id="qOpts"></div>`;
@@ -548,13 +551,15 @@ function renderQ() {
       el.appendChild(b);
     });
     speak(w.en);
+    // 🌟 객관식 전용 10초 타임아웃 타이머 작동 시작
+    countdownTimer = setTimeout(handleQuizTimeout, 10000);
   }
   else if (modeType === 'quiz_ko_en') {
     const distractors = shuffle(activePool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.en);
     const opts = shuffle([...new Set([w.en, ...distractors])]);
     area.innerHTML = `
       <div class="card-box">
-        <div class="card-hint">올바른 단어/숙어를 고르세요</div>
+        <div class="card-hint" id="timerHint">올바른 단어/숙어를 고르세요 (제한시간 10초)</div>
         <div class="card-word" style="font-size:20px; font-weight:500; word-break:keep-all;">${w.ko}</div>
       </div>
       <div class="quiz-opts" id="qOpts"></div>`;
@@ -566,6 +571,8 @@ function renderQ() {
       b.onclick = () => { handleQuizSelect(b, o, w.en); };
       el.appendChild(b);
     });
+    // 🌟 객관식 전용 10초 타임아웃 타이머 작동 시작
+    countdownTimer = setTimeout(handleQuizTimeout, 10000);
   }
 }
 
@@ -644,10 +651,13 @@ function checkSuper() {
   }
 }
 
-/* ★ 객관식 모드 정답만 2초 타이머 작동 (오답은 타이머 없이 버튼 대기) ★ */
+/* ★ 객관식 선택 제어 모듈 (요청하신 정답 시 2초 자동 / 오답 시 완전 수동 보정) ★ */
 function handleQuizSelect(element, selectedOption, correctOption) {
   if (lock) return;
   lock = true;
+  
+  // 보기를 골랐으므로 10초 카운트다운 타이머 즉시 파괴
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   
   const isCorrect = (selectedOption === correctOption);
   element.classList.add(isCorrect ? 'correct' : 'wrong');
@@ -668,14 +678,46 @@ function handleQuizSelect(element, selectedOption, correctOption) {
   
   if (!isCorrect && modeType === 'quiz_ko_en') speak(currentWords[idx].en);
 
-  // 🌟 [최종 조율]: 정답일 때만 2초 후 자동 이동 가동 / 오답일 때는 타이머 작동을 원천 배제하여 무한 대기
+  // 정답일 때만 2초 후 자동 이동 / 오답일 때는 타이머 없이 완전히 멈춰서 수동 대기
   if (isCorrect) {
     quizTimer = setTimeout(moveNext, 2000);
   }
 }
 
+/* ★ 🌟 신규 탑재: 객관식 10초 타임오버(아무것도 선택 안 함) 예외 처리 핸들러 ★ */
+function handleQuizTimeout() {
+  if (lock) return;
+  lock = true;
+  
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
+  
+  // 제한시간 종료 자막 안내 교체
+  const hintEl = document.getElementById('timerHint');
+  if (hintEl) {
+    hintEl.textContent = "제한시간 초과! 오답 처리되었습니다.";
+    hintEl.style.color = "var(--red)";
+  }
+  
+  // 삐- 소리 및 진짜 정답 보기 노란색으로 노출
+  playBeep(false);
+  document.getElementById('correctOpt')?.classList.add('reveal');
+  
+  // 오답 데이터 기록 누적
+  reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: false });
+  
+  // 오답이므로 자동으로 넘어가지 않게 타이머 작동을 배제하고 "다음 →" 버튼만 띄워 수동 대기 고정
+  const area = document.getElementById('gameArea');
+  const nextBtnBox = document.createElement('div');
+  nextBtnBox.style.marginTop = "16px";
+  nextBtnBox.innerHTML = `<button class="action-btn" style="background:var(--green);" onclick="moveNext()">다음 →</button>`;
+  area.appendChild(nextBtnBox);
+  
+  if (modeType === 'quiz_ko_en') speak(currentWords[idx].en);
+}
+
 function moveNext() {
   if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   if (reports.length <= idx) return; 
   idx++;
   if (idx < currentWords.length) { renderQ(); }
@@ -683,6 +725,8 @@ function moveNext() {
 }
 
 function showResult() {
+  if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   showScreen('resultScreen');
   const trueAnswersCount = reports.filter(r => r.ok).length;
   const pct = Math.round((trueAnswersCount / currentWords.length) * 100);
