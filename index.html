@@ -560,8 +560,9 @@ function cleanText(str) {
   return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)]/g, '');
 }
 
+/* ★ 채점 루틴 완전 정밀화 (중복 리포팅 버그 척결) ★ */
 function checkSuper() {
-  if (lock) return; // 예약 대기 중 연타 방지 락
+  if (lock) return;
   const inp = document.getElementById('si');
   if(!inp) return;
   const val = cleanText(inp.value.trim());
@@ -581,17 +582,16 @@ function checkSuper() {
     lock = true; 
     inp.classList.add('correct'); 
     playBeep(true);
-    // ★ 타이머 혼선을 없애기 위해 handleAns를 호출하지 않고 여기서 즉시 타이밍 제어
-    reports.push({ en: w.en, ko: w.ko, ok: true });
-    score++;
-    setTimeout(moveNext, 600); 
+    
+    // 이중 기록 오류 방지: handleAns 구조를 완전히 타도록 일원화
+    handleAns(true, val);
   } else {
-    lock = true; // 오답 발생 시 1초간 입력 방지 락
+    lock = true; 
     inp.classList.add('wrong'); 
     playBeep(false);
     setTimeout(() => {
       inp.classList.remove('wrong'); inp.value = ''; inp.focus();
-      lock = false; // 락 해제
+      lock = false; 
       const fb = document.getElementById('fb');
       if(fb) fb.innerHTML = `<button onclick="showHint()" style="color:var(--text3);font-size:12px;background:none;border:none;cursor:pointer;text-decoration:underline">정답 보기</button>`;
     }, 1000);
@@ -602,13 +602,26 @@ function showHint() {
   const btn = document.getElementById('checkBtn'); if(btn) btn.style.display='none';
   const si = document.getElementById('si'); if(si) si.disabled = true;
   const ab = document.getElementById('ansBox'); if (ab) ab.style.display='block';
-  speak(currentWords[idx].en);
+  
+  // 힌트보기(정답보기)를 눌렀을 때는 오답(False) 리포트를 명확하게 한 번만 기록하도록 제어
+  if(!lock) {
+    lock = true;
+    handleAns(false, 'HINT_USED');
+  }
 }
 
+/* ★ 단일 리포팅 통제 허브 ★ */
 function handleAns(ok, userAns='') {
   const w = currentWords[idx];
-  reports.push({ en: w.en, ko: w.ko, ok });
-  setTimeout(moveNext, ok ? 600 : 1200);
+  
+  // 중복 데이터 인입 차단 검증
+  if (reports.length > idx) return; 
+  
+  if (ok) { score++; }
+  reports.push({ en: w.en, ko: w.ko, ok: ok });
+  
+  // 주관식 힌트 노출이나 정오답 전환 연타 타이밍 완화 세팅
+  setTimeout(moveNext, ok ? 600 : 1000);
 }
 
 function moveNext() {
