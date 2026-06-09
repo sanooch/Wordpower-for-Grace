@@ -143,13 +143,23 @@ body {
 .card-word { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.4; }
 .tts-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin-left: 6px; vertical-align: middle; }
 
+/* 🌟 입력창 기본 및 정답/오답 효과 + 정답 깜빡임 애니메이션 정의 */
 .blank-input {
   width: calc(100% - 36px); margin: 0 18px 10px; padding: 15px 18px;
   border: 2px solid var(--border2); border-radius: var(--radius-sm);
   font-size: 18px; font-weight: 700; font-family: var(--font); text-align: center; outline: none; background: var(--surface);
 }
-.blank-input.correct { border-color: #16A34A; background: var(--green-bg); }
+.blank-input.correct { 
+  border-color: #16A34A; 
+  background: var(--green-bg);
+  animation: blinkCorrect 0.25s linear 2; /* 0.25초 주기로 2번 빠르게 깜빡임 */
+}
 .blank-input.wrong { border-color: #DC2626; background: var(--red-bg); }
+
+@keyframes blinkCorrect {
+  0%, 100% { background: var(--green-bg); border-color: #16A34A; }
+  50% { background: #FFFFFF; border-color: var(--border2); }
+}
 
 .quiz-opts { padding: 0 18px; }
 .qopt {
@@ -347,27 +357,30 @@ function initAudio() {
   if (AC && AC.state === 'suspended') AC.resume();
 }
 
+/* 🌟 오디오 주파수를 튜닝하여 맑고 경쾌한 딩동댕 청각 효과음 구현 */
 function playBeep(ok) {
   try {
     initAudio(); if (!AC) return;
     const now = AC.currentTime;
     if (ok) {
-      [523.25, 659.25, 783.99].forEach((f, i) => {
+      // 솔 - 도 - 미 스타카토 화음으로 "딩동댕♬" 효과 구현
+      const freqs = [392.00, 523.25, 659.25]; 
+      freqs.forEach((f, i) => {
         const o = AC.createOscillator(), g = AC.createGain();
-        o.frequency.setValueAtTime(f, now + i*0.1);
-        g.gain.setValueAtTime(0, now+i*0.1);
-        g.gain.linearRampToValueAtTime(0.04, now+i*0.1+0.02);
-        g.gain.exponentialRampToValueAtTime(0.001, now+i*0.1+0.12);
+        o.frequency.setValueAtTime(f, now + i*0.08);
+        g.gain.setValueAtTime(0, now+i*0.08);
+        g.gain.linearRampToValueAtTime(0.06, now+i*0.08+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now+i*0.08+0.15);
         o.connect(g); g.connect(AC.destination);
-        o.start(now+i*0.1); o.stop(now+i*0.1+0.12);
+        o.start(now+i*0.08); o.stop(now+i*0.08+0.15);
       });
     } else {
       const o = AC.createOscillator(), g = AC.createGain();
-      o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now);
-      g.gain.setValueAtTime(0.04, now);
-      g.gain.linearRampToValueAtTime(0.001, now+0.45);
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(180, now);
+      g.gain.setValueAtTime(0.05, now);
+      g.gain.linearRampToValueAtTime(0.001, now+0.4);
       o.connect(g); g.connect(AC.destination);
-      o.start(); o.stop(now+0.45);
+      o.start(); o.stop(now+0.4);
     }
   } catch(e){}
 }
@@ -560,17 +573,14 @@ function cleanText(str) {
   return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)]/g, '');
 }
 
-/* ★ 글자 수 비례 유사도 체크 정교화 부문 (정답 단어 길이의 절반 이상 일치) ★ */
 function checkSimilarity(user, target) {
   const u = cleanText(user);
   const t = cleanText(target);
   if (!u || !t) return false;
-  if (u === t) return true; // 완벽히 같으면 당연히 통과
+  if (u === t) return true; 
 
-  // 한 글자 꼼수 차단: 타겟 단어가 2글자 이상인데 사용자가 1글자만 쓰면 무조건 오답
   if (t.length >= 2 && u.length <= 1) return false;
 
-  // 두 단어 중 겹치는 연속된 글자 수 계산
   let matchCount = 0;
   for (let i = 0; i < u.length; i++) {
     if (t.includes(u[i])) {
@@ -578,7 +588,6 @@ function checkSimilarity(user, target) {
     }
   }
 
-  // 매칭된 글자 수가 정답 단어 총 길이의 절반(50%) 이상인지 검증
   const threshold = t.length / 2;
   return matchCount >= threshold;
 }
@@ -607,7 +616,6 @@ function checkSuper() {
 
   let ok = false;
   if (qSide === 'en') {
-    // 쉼표나 슬래시로 구분된 뜻 풀에서 하나씩 꺼내 절반 이상 유사도 검사
     const correctMeanings = w.ko.split(/[\/,]/);
     ok = correctMeanings.some(mean => checkSimilarity(rawVal, mean));
   } else {
@@ -615,15 +623,17 @@ function checkSuper() {
   }
 
   lock = true;
-  document.getElementById('checkBtn').style.display = 'none';
-  inp.disabled = true;
 
   if (ok) {
     inp.classList.add('correct'); 
-    playBeep(true);
+    playBeep(true); // 딩동댕 소리 재생
     reports.push({ en: w.en, ko: w.ko, ok: true });
-    handleAnsDirect(true);
+    
+    // 🌟 정답 깜빡임 애니메이션(0.5초)을 눈으로 확인할 수 있는 최적의 딜레이 세팅 후 자동 이동
+    setTimeout(moveNext, 520);
   } else {
+    document.getElementById('checkBtn').style.display = 'none';
+    inp.disabled = true;
     inp.classList.add('wrong'); 
     playBeep(false);
     reports.push({ en: w.en, ko: w.ko, ok: false });
