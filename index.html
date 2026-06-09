@@ -143,7 +143,6 @@ body {
 .card-word { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.4; }
 .tts-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin-left: 6px; vertical-align: middle; }
 
-/* 🌟 주관식 입력창 효과 및 깜빡임 애니메이션 */
 .blank-input {
   width: calc(100% - 36px); margin: 0 18px 10px; padding: 15px 18px;
   border: 2px solid var(--border2); border-radius: var(--radius-sm);
@@ -160,7 +159,6 @@ body {
   animation: blinkWrongBlock 0.25s linear 2;
 }
 
-/* 🌟 객관식 선택 버튼 효과 및 깜빡임 애니메이션 */
 .quiz-opts { padding: 0 18px; }
 .qopt {
   padding: 15px 18px; background: var(--surface); border: 1px solid var(--border2);
@@ -176,7 +174,6 @@ body {
 }
 .qopt.reveal { background: var(--yellow-bg); color: var(--yellow); border-color: #FDE047; }
 
-/* 키프레임 정의 */
 @keyframes blinkCorrectBlock {
   0%, 100% { background: var(--green-bg); }
   50% { background: #FFFFFF; }
@@ -215,7 +212,7 @@ body {
 
 <div id="homeScreen" class="screen active">
   <div class="home-header">
-    <h1>교재 필수 단어장 ✦</h1>
+    <h1>교재 핵심 단어장 ✦</h1>
     <p id="homeSub">로딩 중...</p>
   </div>
 
@@ -366,6 +363,7 @@ let currentWeekTab = Object.keys(wordData)[0];
 let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
+let quizTimer = null; // 객관식 2초 타이머 저장 변수
 
 let AC = null;
 function initAudio() {
@@ -481,6 +479,7 @@ function shuffle(a) {
 
 function renderQ() {
   lock = false;
+  if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
   const w = currentWords[idx];
   const activePool = wordData[currentWeekTab];
   document.getElementById('gameBar').style.width = ((idx+1)/currentWords.length*100)+'%';
@@ -625,15 +624,16 @@ function checkSuper() {
   }
 
   lock = true;
+  document.getElementById('checkBtn').style.display = 'none';
+  inp.disabled = true;
 
   if (ok) {
     inp.classList.add('correct'); 
     playBeep(true); 
     reports.push({ en: w.en, ko: w.ko, ok: true });
-    setTimeout(moveNext, 520);
+    document.getElementById('ansBox').style.width = '100%';
+    document.getElementById('ansBox').style.display = 'block';
   } else {
-    document.getElementById('checkBtn').style.display = 'none';
-    inp.disabled = true;
     inp.classList.add('wrong'); 
     playBeep(false);
     reports.push({ en: w.en, ko: w.ko, ok: false });
@@ -644,7 +644,7 @@ function checkSuper() {
   }
 }
 
-/* ★ 객관식 모드 사운드 및 깜빡임 연동 통제 함수 ★ */
+/* ★ 객관식 사운드, 깜빡임, 수동 버튼 생성 및 2초 후 자동 타이머 통합 개조 부문 ★ */
 function handleQuizSelect(element, selectedOption, correctOption) {
   if (lock) return;
   lock = true;
@@ -653,31 +653,27 @@ function handleQuizSelect(element, selectedOption, correctOption) {
   element.classList.add(isCorrect ? 'correct' : 'wrong');
   playBeep(isCorrect);
   
-  if (isCorrect) {
-    // 맞았을 때는 초록색 깜빡임 애니메이션(0.5초) 후 자동으로 매끄럽게 전환
-    reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: true });
-    setTimeout(moveNext, 520);
-  } else {
-    // 틀렸을 때는 빨간색 깜빡임 연출 후 숨어있던 진짜 정답 보기를 노란색으로 강조 노출
+  if (!isCorrect) {
     document.getElementById('correctOpt')?.classList.add('reveal');
-    reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: false });
-    
-    // 오답 시에는 정답을 눈으로 식별하고 다음 문제를 수동으로 풀 수 있게 버튼 박스 생성 후 고정
-    const area = document.getElementById('gameArea');
-    const nextBtnBox = document.createElement('div');
-    nextBtnBox.style.marginTop = "16px";
-    nextBtnBox.innerHTML = `<button class="action-btn" style="background:var(--green);" onclick="moveNext()">다음 →</button>`;
-    area.appendChild(nextBtnBox);
-    
-    if (modeType === 'quiz_ko_en') speak(currentWords[idx].en);
   }
-}
 
-function handleAns(ok, userAns='') {
-  // 기존 레거시 루틴 우회
+  reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: isCorrect });
+
+  // 1) 수동으로 즉시 넘길 수 있는 버튼을 하단에 동적 추가
+  const area = document.getElementById('gameArea');
+  const nextBtnBox = document.createElement('div');
+  nextBtnBox.style.marginTop = "16px";
+  nextBtnBox.innerHTML = `<button class="action-btn" style="background:var(--green);" onclick="clearTimeout(quizTimer); moveNext();">다음 →</button>`;
+  area.appendChild(nextBtnBox);
+  
+  if (!isCorrect && modeType === 'quiz_ko_en') speak(currentWords[idx].en);
+
+  // 2) 가만히 있어도 2초 후에 자동으로 다음 카드 처리
+  quizTimer = setTimeout(moveNext, 2000);
 }
 
 function moveNext() {
+  if (quizTimer) { clearTimeout(quizTimer); quizTimer = null; }
   if (reports.length <= idx) return; 
   idx++;
   if (idx < currentWords.length) { renderQ(); }
