@@ -143,7 +143,7 @@ body {
 .card-word { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.4; }
 .tts-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin-left: 6px; vertical-align: middle; }
 
-/* 🌟 입력창 기본 및 정답/오답 효과 + 정답 깜빡임 애니메이션 정의 */
+/* 🌟 주관식 입력창 효과 및 깜빡임 애니메이션 */
 .blank-input {
   width: calc(100% - 36px); margin: 0 18px 10px; padding: 15px 18px;
   border: 2px solid var(--border2); border-radius: var(--radius-sm);
@@ -152,23 +152,39 @@ body {
 .blank-input.correct { 
   border-color: #16A34A; 
   background: var(--green-bg);
-  animation: blinkCorrect 0.25s linear 2; /* 0.25초 주기로 2번 빠르게 깜빡임 */
+  animation: blinkCorrectBlock 0.25s linear 2;
 }
-.blank-input.wrong { border-color: #DC2626; background: var(--red-bg); }
-
-@keyframes blinkCorrect {
-  0%, 100% { background: var(--green-bg); border-color: #16A34A; }
-  50% { background: #FFFFFF; border-color: var(--border2); }
+.blank-input.wrong { 
+  border-color: #DC2626; 
+  background: var(--red-bg);
+  animation: blinkWrongBlock 0.25s linear 2;
 }
 
+/* 🌟 객관식 선택 버튼 효과 및 깜빡임 애니메이션 */
 .quiz-opts { padding: 0 18px; }
 .qopt {
   padding: 15px 18px; background: var(--surface); border: 1px solid var(--border2);
   border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: 500;
 }
-.qopt.correct { background: var(--green-bg); color: var(--green); border-color: #86EFAC; }
-.qopt.wrong { background: var(--red-bg); color: var(--red); border-color: #FCA5A5; }
+.qopt.correct { 
+  background: var(--green-bg); color: var(--green); border-color: #86EFAC; 
+  animation: blinkCorrectBlock 0.25s linear 2;
+}
+.qopt.wrong { 
+  background: var(--red-bg); color: var(--red); border-color: #FCA5A5; 
+  animation: blinkWrongBlock 0.25s linear 2;
+}
 .qopt.reveal { background: var(--yellow-bg); color: var(--yellow); border-color: #FDE047; }
+
+/* 키프레임 정의 */
+@keyframes blinkCorrectBlock {
+  0%, 100% { background: var(--green-bg); }
+  50% { background: #FFFFFF; }
+}
+@keyframes blinkWrongBlock {
+  0%, 100% { background: var(--red-bg); }
+  50% { background: #FFFFFF; }
+}
 
 .action-btn {
   display: block; width: calc(100% - 36px); margin: 0 18px; padding: 15px; background: var(--accent); color: #fff;
@@ -357,19 +373,17 @@ function initAudio() {
   if (AC && AC.state === 'suspended') AC.resume();
 }
 
-/* 🌟 오디오 주파수를 튜닝하여 맑고 경쾌한 딩동댕 청각 효과음 구현 */
 function playBeep(ok) {
   try {
     initAudio(); if (!AC) return;
     const now = AC.currentTime;
     if (ok) {
-      // 솔 - 도 - 미 스타카토 화음으로 "딩동댕♬" 효과 구현
       const freqs = [392.00, 523.25, 659.25]; 
       freqs.forEach((f, i) => {
         const o = AC.createOscillator(), g = AC.createGain();
         o.frequency.setValueAtTime(f, now + i*0.08);
         g.gain.setValueAtTime(0, now+i*0.08);
-        g.gain.linearRampToValueAtTime(0.06, now+i*0.08+0.02);
+        g.gain.linearRampToValueAtTime(0.04, now+i*0.08+0.02);
         g.gain.exponentialRampToValueAtTime(0.001, now+i*0.08+0.15);
         o.connect(g); g.connect(AC.destination);
         o.start(now+i*0.08); o.stop(now+i*0.08+0.15);
@@ -377,7 +391,7 @@ function playBeep(ok) {
     } else {
       const o = AC.createOscillator(), g = AC.createGain();
       o.type = 'sawtooth'; o.frequency.setValueAtTime(180, now);
-      g.gain.setValueAtTime(0.05, now);
+      g.gain.setValueAtTime(0.04, now);
       g.gain.linearRampToValueAtTime(0.001, now+0.4);
       o.connect(g); g.connect(AC.destination);
       o.start(); o.stop(now+0.4);
@@ -531,13 +545,7 @@ function renderQ() {
       const b = document.createElement('div');
       b.className = 'qopt'; b.textContent = o;
       if (o===w.ko) b.id = 'correctOpt';
-      b.onclick = () => {
-        if (lock) return; lock = true;
-        const ok = o===w.ko;
-        b.classList.add(ok?'correct':'wrong');
-        if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
-        playBeep(ok); handleAns(ok, o);
-      };
+      b.onclick = () => { handleQuizSelect(b, o, w.ko); };
       el.appendChild(b);
     });
     speak(w.en);
@@ -556,13 +564,7 @@ function renderQ() {
       const b = document.createElement('div');
       b.className = 'qopt'; b.textContent = o;
       if (o===w.en) b.id = 'correctOpt';
-      b.onclick = () => {
-        if (lock) return; lock = true;
-        const ok = o===w.en;
-        b.classList.add(ok?'correct':'wrong');
-        if (!ok) document.getElementById('correctOpt')?.classList.add('reveal');
-        playBeep(ok); if(ok) speak(w.en); handleAns(ok, o);
-      };
+      b.onclick = () => { handleQuizSelect(b, o, w.en); };
       el.appendChild(b);
     });
   }
@@ -626,10 +628,8 @@ function checkSuper() {
 
   if (ok) {
     inp.classList.add('correct'); 
-    playBeep(true); // 딩동댕 소리 재생
+    playBeep(true); 
     reports.push({ en: w.en, ko: w.ko, ok: true });
-    
-    // 🌟 정답 깜빡임 애니메이션(0.5초)을 눈으로 확인할 수 있는 최적의 딜레이 세팅 후 자동 이동
     setTimeout(moveNext, 520);
   } else {
     document.getElementById('checkBtn').style.display = 'none';
@@ -644,14 +644,37 @@ function checkSuper() {
   }
 }
 
-function handleAnsDirect(ok) {
-  setTimeout(moveNext, 0);
+/* ★ 객관식 모드 사운드 및 깜빡임 연동 통제 함수 ★ */
+function handleQuizSelect(element, selectedOption, correctOption) {
+  if (lock) return;
+  lock = true;
+  
+  const isCorrect = (selectedOption === correctOption);
+  element.classList.add(isCorrect ? 'correct' : 'wrong');
+  playBeep(isCorrect);
+  
+  if (isCorrect) {
+    // 맞았을 때는 초록색 깜빡임 애니메이션(0.5초) 후 자동으로 매끄럽게 전환
+    reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: true });
+    setTimeout(moveNext, 520);
+  } else {
+    // 틀렸을 때는 빨간색 깜빡임 연출 후 숨어있던 진짜 정답 보기를 노란색으로 강조 노출
+    document.getElementById('correctOpt')?.classList.add('reveal');
+    reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: false });
+    
+    // 오답 시에는 정답을 눈으로 식별하고 다음 문제를 수동으로 풀 수 있게 버튼 박스 생성 후 고정
+    const area = document.getElementById('gameArea');
+    const nextBtnBox = document.createElement('div');
+    nextBtnBox.style.marginTop = "16px";
+    nextBtnBox.innerHTML = `<button class="action-btn" style="background:var(--green);" onclick="moveNext()">다음 →</button>`;
+    area.appendChild(nextBtnBox);
+    
+    if (modeType === 'quiz_ko_en') speak(currentWords[idx].en);
+  }
 }
 
 function handleAns(ok, userAns='') {
-  if (reports.length > idx) return; 
-  reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: ok });
-  setTimeout(moveNext, ok ? 0 : 500);
+  // 기존 레거시 루틴 우회
 }
 
 function moveNext() {
