@@ -363,7 +363,7 @@ let currentWeekTab = Object.keys(wordData)[0];
 let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
-let quizTimer = null; // 객관식 2초 타이머 저장 변수
+let quizTimer = null; 
 
 let AC = null;
 function initAudio() {
@@ -644,7 +644,7 @@ function checkSuper() {
   }
 }
 
-/* ★ 객관식 사운드, 깜빡임, 수동 버튼 생성 및 2초 후 자동 타이머 통합 개조 부문 ★ */
+/* ★ 객관식 모드 정답만 2초 타이머 작동 (오답은 타이머 없이 버튼 대기) ★ */
 function handleQuizSelect(element, selectedOption, correctOption) {
   if (lock) return;
   lock = true;
@@ -659,7 +659,7 @@ function handleQuizSelect(element, selectedOption, correctOption) {
 
   reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: isCorrect });
 
-  // 1) 수동으로 즉시 넘길 수 있는 버튼을 하단에 동적 추가
+  // 하단 수동 피드백 "다음 →" 버튼 생성
   const area = document.getElementById('gameArea');
   const nextBtnBox = document.createElement('div');
   nextBtnBox.style.marginTop = "16px";
@@ -668,8 +668,10 @@ function handleQuizSelect(element, selectedOption, correctOption) {
   
   if (!isCorrect && modeType === 'quiz_ko_en') speak(currentWords[idx].en);
 
-  // 2) 가만히 있어도 2초 후에 자동으로 다음 카드 처리
-  quizTimer = setTimeout(moveNext, 2000);
+  // 🌟 [최종 조율]: 정답일 때만 2초 후 자동 이동 가동 / 오답일 때는 타이머 작동을 원천 배제하여 무한 대기
+  if (isCorrect) {
+    quizTimer = setTimeout(moveNext, 2000);
+  }
 }
 
 function moveNext() {
