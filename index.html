@@ -204,12 +204,12 @@ body {
     <div class="mc mc-hl" onclick="startMode('super_en_ko')">
       <div class="mc-icon">🚀</div>
       <div class="mc-label">주관식 (영➔한)</div>
-      <div class="mc-desc">뜻 직접 입력 (복수 뜻 허용)</div>
+      <div class="mc-desc">뜻 직접 입력 (절반 이상 일치)</div>
     </div>
     <div class="mc mc-hl" onclick="startMode('super_ko_en')">
       <div class="mc-icon">✍️</div>
       <div class="mc-label">주관식 (한➔영)</div>
-      <div class="mc-desc">스펠링 직접 타이핑 입력</div>
+      <div class="mc-desc">스펠링 직접 타이핑 (절반 이상 일치)</div>
     </div>
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_en_ko')">
       <div class="mc-icon">✅</div>
@@ -560,23 +560,42 @@ function cleanText(str) {
   return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)]/g, '');
 }
 
-/* ★ 주관식 확인 개조 부문 (빈칸 확인 및 수동 다음 버튼 강제 전환) ★ */
+/* ★ 글자 수 비례 유사도 체크 정교화 부문 (정답 단어 길이의 절반 이상 일치) ★ */
+function checkSimilarity(user, target) {
+  const u = cleanText(user);
+  const t = cleanText(target);
+  if (!u || !t) return false;
+  if (u === t) return true; // 완벽히 같으면 당연히 통과
+
+  // 한 글자 꼼수 차단: 타겟 단어가 2글자 이상인데 사용자가 1글자만 쓰면 무조건 오답
+  if (t.length >= 2 && u.length <= 1) return false;
+
+  // 두 단어 중 겹치는 연속된 글자 수 계산
+  let matchCount = 0;
+  for (let i = 0; i < u.length; i++) {
+    if (t.includes(u[i])) {
+      matchCount++;
+    }
+  }
+
+  // 매칭된 글자 수가 정답 단어 총 길이의 절반(50%) 이상인지 검증
+  const threshold = t.length / 2;
+  return matchCount >= threshold;
+}
+
 function checkSuper() {
   if (lock) return;
   const inp = document.getElementById('si');
   if(!inp) return;
   
   const rawVal = inp.value.trim();
-  const val = cleanText(rawVal);
   const w = currentWords[idx];
   
-  // 아무것도 입력하지 않았을 때 처리 루틴 (빈칸 통과 허용)
   if (rawVal === "") {
     lock = true;
     inp.classList.add('wrong');
     playBeep(false);
     
-    // 정답 박스 및 다음 버튼 즉시 표시
     document.getElementById('checkBtn').style.display = 'none';
     inp.disabled = true;
     document.getElementById('ansBox').style.width = '100%';
@@ -588,10 +607,11 @@ function checkSuper() {
 
   let ok = false;
   if (qSide === 'en') {
-    const correctMeanings = w.ko.split(/[\/,]/).map(s => cleanText(s));
-    ok = correctMeanings.some(a => val === a || val.includes(a) || a.includes(val));
+    // 쉼표나 슬래시로 구분된 뜻 풀에서 하나씩 꺼내 절반 이상 유사도 검사
+    const correctMeanings = w.ko.split(/[\/,]/);
+    ok = correctMeanings.some(mean => checkSimilarity(rawVal, mean));
   } else {
-    ok = (val === cleanText(w.en));
+    ok = checkSimilarity(rawVal, w.en);
   }
 
   lock = true;
@@ -602,15 +622,12 @@ function checkSuper() {
     inp.classList.add('correct'); 
     playBeep(true);
     reports.push({ en: w.en, ko: w.ko, ok: true });
-    
-    // 맞았을 때는 대기 시간 0초 세팅으로 바로 다음으로 전환
     handleAnsDirect(true);
   } else {
     inp.classList.add('wrong'); 
     playBeep(false);
     reports.push({ en: w.en, ko: w.ko, ok: false });
     
-    // 틀렸을 때는 가은이가 교재 정답을 볼 수 있게 정답 박스를 수동 노출하고 대기
     document.getElementById('ansBox').style.width = '100%';
     document.getElementById('ansBox').style.display = 'block';
     if (qSide === 'ko') speak(w.en);
@@ -624,8 +641,6 @@ function handleAnsDirect(ok) {
 function handleAns(ok, userAns='') {
   if (reports.length > idx) return; 
   reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: ok });
-  
-  // 객관식 모드용 화면 전환 속도 0.5초 조율
   setTimeout(moveNext, ok ? 0 : 500);
 }
 
