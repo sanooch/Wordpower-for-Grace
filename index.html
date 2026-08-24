@@ -41,6 +41,7 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 
@@ -48,6 +49,7 @@ body {
   max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
 }
 
@@ -205,6 +207,37 @@ body {
 
 .answer-box { display: none; margin: 0 18px 10px; padding: 14px; background: var(--yellow-bg); border-radius: var(--radius-sm); text-align: center; border: 1px solid #FDE047; }
 .answer-box h3 { font-size: 20px; font-weight: 700; color: var(--yellow); }
+
+/* 스펠링 오답 하이라이트 UI */
+.diff-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #FFFFFF;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(0,0,0,0.08);
+  font-size: 14px;
+  text-align: left;
+  line-height: 1.6;
+}
+.diff-row { margin-bottom: 4px; }
+.diff-row:last-child { margin-bottom: 0; }
+.diff-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 2px; }
+.diff-text { font-family: var(--font); font-size: 16px; font-weight: 700; word-break: break-all; }
+.diff-wrong {
+  color: #DC2626;
+  background: #FEE2E2;
+  border-radius: 4px;
+  padding: 1px 3px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.diff-correct {
+  color: #166534;
+  background: #DCFCE7;
+  border-radius: 4px;
+  padding: 1px 3px;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -292,230 +325,199 @@ body {
 <script>
 const wordData = {
   "8월 24일": [
-  // [첫 번째 사진: 76페이지, 01번 ~ 11번]
-  { en: 'conspicuous consumption', ko: '과시적 소비' },
-  { en: 'social status', ko: '사회적 지위' },
-  { en: 'opt for sth', ko: '~을 선택하다' },
-  { en: 'mass production', ko: '대량 생산' },
-  { en: 'distinguish A from B', ko: 'A와 B를 구별하다' },
-  { en: 'human capital', ko: '인적 자본' },
-  { en: 'peace of mind', ko: '마음의 평화' },
-  { en: 'status competition', ko: '지위 경쟁' },
-  { en: 'digital platform', ko: '디지털 플랫폼' },
-  { en: 'business strategy', ko: '사업 전략' },
-  { en: 'rush hour', ko: '혼잡 시간대' },
-
-  // [두 번째 사진: 77페이지, 12번 ~ 20번]
-  { en: 'tiered pricing', ko: '계층별 가격제' },
-  { en: 'last-minute', ko: '막판의' },
-  { en: 'friction', ko: '마찰, 갈등' },
-  { en: 'science fiction', ko: '공상 과학' },
-  { en: 'streamline production', ko: '생산을 효율화하다' },
-  { en: 'safety net', ko: '사회 안전망' },
-  { en: 'displaced', ko: '대체된, 밀려난' },
-  { en: 'enforce', ko: '집행하다, 시행하다' },
-  { en: 'tax revenue', ko: '세수' }
-],
+    { en: 'conspicuous consumption', ko: '과시적 소비' },
+    { en: 'social status', ko: '사회적 지위' },
+    { en: 'opt for sth', ko: '~을 선택하다' },
+    { en: 'mass production', ko: '대량 생산' },
+    { en: 'distinguish A from B', ko: 'A와 B를 구별하다' },
+    { en: 'human capital', ko: '인적 자본' },
+    { en: 'peace of mind', ko: '마음의 평화' },
+    { en: 'status competition', ko: '지위 경쟁' },
+    { en: 'digital platform', ko: '디지털 플랫폼' },
+    { en: 'business strategy', ko: '사업 전략' },
+    { en: 'rush hour', ko: '혼잡 시간대' },
+    { en: 'tiered pricing', ko: '계층별 가격제' },
+    { en: 'last-minute', ko: '막판의' },
+    { en: 'friction', ko: '마찰, 갈등' },
+    { en: 'science fiction', ko: '공상 과학' },
+    { en: 'streamline production', ko: '생산을 효율화하다' },
+    { en: 'safety net', ko: '사회 안전망' },
+    { en: 'displaced', ko: '대체된, 밀려난' },
+    { en: 'enforce', ko: '집행하다, 시행하다' },
+    { en: 'tax revenue', ko: '세수' }
+  ],
   "8월 17일": [
-  // [첫 번째 사진: 01번 ~ 10번]
-  { en: 'priest', ko: '성직자' },
-  { en: 'measure', ko: '측정하다' },
-  { en: 'sunrise/sunset', ko: '일출/일몰' },
-  { en: 'settlement', ko: '정착지' },
-  { en: 'timetable', ko: '시간표' },
-  { en: 'breed', ko: '번식시키다' },
-  { en: 'ritual', ko: '의식[의례]' },
-  { en: 'exhibit', ko: '보이다[나타내다]' },
-  { en: 'decision-making', ko: '의사 결정' },
-  { en: 'crop', ko: '작물' },
-
-  // [두 번째 사진: 11번 ~ 20번]
-  { en: 'hunter-gatherer', ko: '수렵·채집인' },
-  { en: 'population', ko: '인구' },
-  { en: 'space', ko: '간격을 두다' },
-  { en: 'liar', ko: '거짓말쟁이' },
-  { en: 'after all', ko: '결국' },
-  { en: 'game', ko: '사냥감' },
-  { en: 'passage', ko: '흐름[경과]' },
-  { en: 'coordinate', ko: '조정하다' },
-  { en: 'collide', ko: '충돌하다' },
-  { en: 'own', ko: '소유하다' },
-
-  // [세 번째 사진: 01번 ~ 11번]
-  { en: 'trick', ko: '요령, 비결' },
-  { en: 'face', ko: '직면하다' },
-  { en: 'statement', ko: '진술' },
-  { en: 'attitude', ko: '태도, 자세' },
-  { en: 'productivity', ko: '생산성' },
-  { en: 'manufacturing industry', ko: '제조업' },
-  { en: 'separate', ko: '분리된' },
-  { en: 'switch', ko: '바꾸다' },
-  { en: 'approval', ko: '승인' },
-  { en: 'permission', ko: '허가' },
-  { en: 'rejection', ko: '거절' },
-
-  // [네 번째 사진: 12번 ~ 20번]
-  { en: 'deliberately', ko: '의도적으로' },
-  { en: 'option', ko: '선택지' },
-  { en: 'reveal', ko: '드러내다' },
-  { en: 'responsibility', ko: '책임' },
-  { en: 'cost', ko: '비용' },
-  { en: 'huge', ko: '큰' },
-  { en: 'career', ko: '경력, 직업' },
-  { en: 'client', ko: '고객' },
-  { en: 'notice', ko: '알아차리다' }
-],
+    { en: 'priest', ko: '성직자' },
+    { en: 'measure', ko: '측정하다' },
+    { en: 'sunrise/sunset', ko: '일출/일몰' },
+    { en: 'settlement', ko: '정착지' },
+    { en: 'timetable', ko: '시간표' },
+    { en: 'breed', ko: '번식시키다' },
+    { en: 'ritual', ko: '의식[의례]' },
+    { en: 'exhibit', ko: '보이다[나타내다]' },
+    { en: 'decision-making', ko: '의사 결정' },
+    { en: 'crop', ko: '작물' },
+    { en: 'hunter-gatherer', ko: '수렵·채집인' },
+    { en: 'population', ko: '인구' },
+    { en: 'space', ko: '간격을 두다' },
+    { en: 'liar', ko: '거짓말쟁이' },
+    { en: 'after all', ko: '결국' },
+    { en: 'game', ko: '사냥감' },
+    { en: 'passage', ko: '흐름[경과]' },
+    { en: 'coordinate', ko: '조정하다' },
+    { en: 'collide', ko: '충돌하다' },
+    { en: 'own', ko: '소유하다' },
+    { en: 'trick', ko: '요령, 비결' },
+    { en: 'face', ko: '직면하다' },
+    { en: 'statement', ko: '진술' },
+    { en: 'attitude', ko: '태도, 자세' },
+    { en: 'productivity', ko: '생산성' },
+    { en: 'manufacturing industry', ko: '제조업' },
+    { en: 'separate', ko: '분리된' },
+    { en: 'switch', ko: '바꾸다' },
+    { en: 'approval', ko: '승인' },
+    { en: 'permission', ko: '허가' },
+    { en: 'rejection', ko: '거절' },
+    { en: 'deliberately', ko: '의도적으로' },
+    { en: 'option', ko: '선택지' },
+    { en: 'reveal', ko: '드러내다' },
+    { en: 'responsibility', ko: '책임' },
+    { en: 'cost', ko: '비용' },
+    { en: 'huge', ko: '큰' },
+    { en: 'career', ko: '경력, 직업' },
+    { en: 'client', ko: '고객' },
+    { en: 'notice', ko: '알아차리다' }
+  ],
   "8월 3일": [
-  // [첫 번째 사진: 74페이지, 01번 ~ 12번]
-  { en: 'attract', ko: '끌어당기다' },
-  { en: 'bottom line', ko: '순이익' },
-  { en: 'greenwashing', ko: '그린워싱 (위장 환경주의)' },
-  { en: 'fall short', ko: '기대에 못 미치다' },
-  { en: 'jargon', ko: '전문 용어' },
-  { en: 'address', ko: '(문제를)다루다, 해결하다' },
-  { en: 'greenhushing', ko: '그린허싱 (친환경 침묵)' },
-  { en: 'environmental efforts', ko: '환경적 노력' },
-  { en: 'credibility', ko: '신뢰성' },
-  { en: 'sustainability', ko: '지속 가능성' },
-  { en: 'run counter to', ko: '~에 반대되다' },
-  { en: 'compensation', ko: '보상(금)' },
-
-  // [두 번째 사진: 75페이지, 13번 ~ 21번]
-  { en: 'initiative', ko: '계획' },
-  { en: 'global backlash', ko: '국제적 반발' },
-  { en: 'public distrust', ko: '대중의 불신' },
-  { en: 'dismissive', ko: '무시하는' },
-  { en: 'social justice movement', ko: '사회 정의 운동' },
-  { en: 'issue a public apology', ko: '공식 사과를 하다' },
-  { en: 'social issue', ko: '사회적 문제' },
-  { en: 'perception', ko: '인식' },
-  { en: 'key factor', ko: '중요한 요소' }
-],
+    { en: 'attract', ko: '끌어당기다' },
+    { en: 'bottom line', ko: '순이익' },
+    { en: 'greenwashing', ko: '그린워싱 (위장 환경주의)' },
+    { en: 'fall short', ko: '기대에 못 미치다' },
+    { en: 'jargon', ko: '전문 용어' },
+    { en: 'address', ko: '(문제를)다루다, 해결하다' },
+    { en: 'greenhushing', ko: '그린허싱 (친환경 침묵)' },
+    { en: 'environmental efforts', ko: '환경적 노력' },
+    { en: 'credibility', ko: '신뢰성' },
+    { en: 'sustainability', ko: '지속 가능성' },
+    { en: 'run counter to', ko: '~에 반대되다' },
+    { en: 'compensation', ko: '보상(금)' },
+    { en: 'initiative', ko: '계획' },
+    { en: 'global backlash', ko: '국제적 반발' },
+    { en: 'public distrust', ko: '대중의 불신' },
+    { en: 'dismissive', ko: '무시하는' },
+    { en: 'social justice movement', ko: '사회 정의 운동' },
+    { en: 'issue a public apology', ko: '공식 사과를 하다' },
+    { en: 'social issue', ko: '사회적 문제' },
+    { en: 'perception', ko: '인식' },
+    { en: 'key factor', ko: '중요한 요소' }
+  ],
   "7월 27일": [
-  // [첫 번째 사진: 01번 ~ 10번]
-  { en: 'sense', ko: '감각' },
-  { en: 'ideally', ko: '이상적으로' },
-  { en: 'pedestrian', ko: '보행자' },
-  { en: 'extreme', ko: '극단' },
-  { en: 'seek', ko: '추구하다' },
-  { en: 'bond', ko: '유대' },
-  { en: 'crucial', ko: '중요한' },
-  { en: 'identical', ko: '동일한' },
-  { en: 'domestic', ko: '가정의' },
-  { en: 'illness', ko: '질병' },
-
-  // [두 번째 사진: 01번 ~ 10번]
-  { en: 'obtain', ko: '얻다' },
-  { en: 'criticize', ko: '비판하다' },
-  { en: 'matter', ko: '중요하다' },
-  { en: 'surface', ko: '표면' },
-  { en: 'reflection', ko: '반사' },
-  { en: 'practice', ko: '연습' },
-  { en: 'predict', ko: '예측하다' },
-  { en: 'influence', ko: '영향을 미치다' },
-  { en: 'wrinkled', ko: '구겨진' },
-  { en: 'glacier', ko: '빙하' },
-
-  // [세 번째 사진: 11번 ~ 19번]
-  { en: 'approach', ko: '접근하다' },
-  { en: 'uncover', ko: '발견하다' },
-  { en: 'independently', ko: '독립적으로' },
-  { en: 'evaluate', ko: '평가하다' },
-  { en: 'collective intelligence', ko: '집단 지성' },
-  { en: 'instinct', ko: '본능' },
-  { en: 'migratory bird', ko: '철새' },
-  { en: 'respond', ko: '반응하다, 대응하다' },
-  { en: 'enable', ko: '가능하게 하다' },
-
-  // [네 번째 사진: 11번 ~ 18번]
-  { en: 'gravity', ko: '중력' },
-  { en: 'spin', ko: '회전하다' },
-  { en: 'cram for', ko: '벼락치기하다' },
-  { en: 'fade', ko: '희미해지다' },
-  { en: 'material', ko: '자료' },
-  { en: 'candidate', ko: '후보, 지원자' },
-  { en: 'intensively', ko: '집중적으로' },
-  { en: 'question', ko: '~에 대해 의문을 제기하다' }
-],
+    { en: 'sense', ko: '감각' },
+    { en: 'ideally', ko: '이상적으로' },
+    { en: 'pedestrian', ko: '보행자' },
+    { en: 'extreme', ko: '극단' },
+    { en: 'seek', ko: '추구하다' },
+    { en: 'bond', ko: '유대' },
+    { en: 'crucial', ko: '중요한' },
+    { en: 'identical', ko: '동일한' },
+    { en: 'domestic', ko: '가정의' },
+    { en: 'illness', ko: '질병' },
+    { en: 'obtain', ko: '얻다' },
+    { en: 'criticize', ko: '비판하다' },
+    { en: 'matter', ko: '중요하다' },
+    { en: 'surface', ko: '표면' },
+    { en: 'reflection', ko: '반사' },
+    { en: 'practice', ko: '연습' },
+    { en: 'predict', ko: '예측하다' },
+    { en: 'influence', ko: '영향을 미치다' },
+    { en: 'wrinkled', ko: '구겨진' },
+    { en: 'glacier', ko: '빙하' },
+    { en: 'approach', ko: '접근하다' },
+    { en: 'uncover', ko: '발견하다' },
+    { en: 'independently', ko: '독립적으로' },
+    { en: 'evaluate', ko: '평가하다' },
+    { en: 'collective intelligence', ko: '집단 지성' },
+    { en: 'instinct', ko: '본능' },
+    { en: 'migratory bird', ko: '철새' },
+    { en: 'respond', ko: '반응하다, 대응하다' },
+    { en: 'enable', ko: '가능하게 하다' },
+    { en: 'gravity', ko: '중력' },
+    { en: 'spin', ko: '회전하다' },
+    { en: 'cram for', ko: '벼락치기하다' },
+    { en: 'fade', ko: '희미해지다' },
+    { en: 'material', ko: '자료' },
+    { en: 'candidate', ko: '후보, 지원자' },
+    { en: 'intensively', ko: '집중적으로' },
+    { en: 'question', ko: '~에 대해 의문을 제기하다' }
+  ],
   "7월 20일": [
-  // [첫 번째 사진: 72페이지, 01번 ~ 12번]
-  { en: 'comparable to sth', ko: '~에 견줄 만한' },
-  { en: 'drift away', ko: '멀어지다, 떠내려가다' },
-  { en: 'thoughtfulness', ko: '배려, 신중함' },
-  { en: 'unexpected difficulty', ko: '예상치 못한 어려움' },
-  { en: 'in the absence of sth', ko: '~이 없는 상태에서' },
-  { en: 'be sealed in sth', ko: '~에 밀봉되다' },
-  { en: 'track an object', ko: '물체를 추적하다' },
-  { en: 'in orbit', ko: '궤도 상에' },
-  { en: 'collect data', ko: '데이터를 수집하다' },
-  { en: 'predict', ko: '예측하다' },
-  { en: 'warning message', ko: '경고 메시지' },
-  { en: 'avoid a collision', ko: '충돌을 피하다' },
-
-  // [두 번째 사진: 73페이지, 13번 ~ 23번]
-  { en: 'follow guidelines', ko: '지침을 따르다' },
-  { en: 'global responsibility', ko: '국제적 책임' },
-  { en: 'shared access', ko: '공동 접근권' },
-  { en: 'territorial control', ko: '영토 제어' },
-  { en: 'harmful interference', ko: '유해한 간섭' },
-  { en: 'coordinate', ko: '조율하다, 조정하다' },
-  { en: 'celestial body', ko: '천체' },
-  { en: 'promote transparency', ko: '투명성을 높이다' },
-  { en: 'indefinite', ko: '불명확한, 무기한의' },
-  { en: 'physical change', ko: '신체적 변화' },
-  { en: 'environmental change', ko: '환경 변화' }
-],
+    { en: 'comparable to sth', ko: '~에 견줄 만한' },
+    { en: 'drift away', ko: '멀어지다, 떠내려가다' },
+    { en: 'thoughtfulness', ko: '배려, 신중함' },
+    { en: 'unexpected difficulty', ko: '예상치 못한 어려움' },
+    { en: 'in the absence of sth', ko: '~이 없는 상태에서' },
+    { en: 'be sealed in sth', ko: '~에 밀봉되다' },
+    { en: 'track an object', ko: '물체를 추적하다' },
+    { en: 'in orbit', ko: '궤도 상에' },
+    { en: 'collect data', ko: '데이터를 수집하다' },
+    { en: 'predict', ko: '예측하다' },
+    { en: 'warning message', ko: '경고 메시지' },
+    { en: 'avoid a collision', ko: '충돌을 피하다' },
+    { en: 'follow guidelines', ko: '지침을 따르다' },
+    { en: 'global responsibility', ko: '국제적 책임' },
+    { en: 'shared access', ko: '공동 접근권' },
+    { en: 'territorial control', ko: '영토 제어' },
+    { en: 'harmful interference', ko: '유해한 간섭' },
+    { en: 'coordinate', ko: '조율하다, 조정하다' },
+    { en: 'celestial body', ko: '천체' },
+    { en: 'promote transparency', ko: '투명성을 높이다' },
+    { en: 'indefinite', ko: '불명확한, 무기한의' },
+    { en: 'physical change', ko: '신체적 변화' },
+    { en: 'environmental change', ko: '환경 변화' }
+  ],
   "7월 12일": [
-  // [첫 번째 사진: Part 1, 01번 ~ 11번]
-  { en: 'usually', ko: '보통' },
-  { en: 'flock', ko: '떼 지어 모이다' },
-  { en: 'harm', ko: '해를 끼치다' },
-  { en: 'similarity', ko: '유사성' },
-  { en: 'clothes', ko: '옷' },
-  { en: 'exception', ko: '예외' },
-  { en: 'status', ko: '지위' },
-  { en: 'rating', ko: '평가' },
-  { en: 'emerge', ko: '나타나다 [등장하다]' },
-  { en: 'demonstrate', ko: '보여주다, 입증하다' },
-  { en: 'plain', ko: '소박한 [단순한]' },
-
-  // [두 번째 사진: Part 1, 12번 ~ 21번]
-  { en: 'craftsman', ko: '장인' },
-  { en: 'stressful', ko: '스트레스를 주는' },
-  { en: 'disrupt', ko: '방해하다 [깨뜨리다]' },
-  { en: 'affect', ko: '영향을 미치다' },
-  { en: 'recognize', ko: '인정하다' },
-  { en: 'essential', ko: '필수적인' },
-  { en: 'discourage', ko: '막다 [억제하다]' },
-  { en: 'tendency', ko: '경향' },
-  { en: 'familiar', ko: '익숙한' },
-  { en: 'concrete', ko: '구체적인' },
-
-  // [세 번째 사진: Part 2, 01번 ~ 11번]
-  { en: 'human race', ko: '인류' },
-  { en: 'ancestor', ko: '조상' },
-  { en: 'wilderness', ko: '야생, 자연 환경' },
-  { en: 'proper', ko: '적절한' },
-  { en: 'struggle', ko: '어려움을 겪다' },
-  { en: 'escape', ko: '벗어나다' },
-  { en: 'eliminate', ko: '제거하다' },
-  { en: 'function', ko: '기능하다' },
-  { en: 'epidemic', ko: '전염병 [유행병]' },
-  { en: 'sanitation', ko: '위생' },
-  { en: 'serve', ko: '(~을 위해) 제 역할을 하다' },
-
-  // [네 번째 사진: Part 2, 12번 ~ 19번]
-  { en: 'criteria', ko: '기준' },
-  { en: 'diverse', ko: '다양한' },
-  { en: 'objective', ko: '목표' },
-  { en: 'pessimistic', ko: '비관적인' },
-  { en: 'depressed', ko: '우울한' },
-  { en: 'hire', ko: '고용하다' },
-  { en: 'scientific', ko: '과학적인' },
-  { en: 'hopelessness', ko: '절망감' }
-],
+    { en: 'usually', ko: '보통' },
+    { en: 'flock', ko: '떼 지어 모이다' },
+    { en: 'harm', ko: '해를 끼치다' },
+    { en: 'similarity', ko: '유사성' },
+    { en: 'clothes', ko: '옷' },
+    { en: 'exception', ko: '예외' },
+    { en: 'status', ko: '지위' },
+    { en: 'rating', ko: '평가' },
+    { en: 'emerge', ko: '나타나다 [등장하다]' },
+    { en: 'demonstrate', ko: '보여주다, 입증하다' },
+    { en: 'plain', ko: '소박한 [단순한]' },
+    { en: 'craftsman', ko: '장인' },
+    { en: 'stressful', ko: '스트레스를 주는' },
+    { en: 'disrupt', ko: '방해하다 [깨뜨리다]' },
+    { en: 'affect', ko: '영향을 미치다' },
+    { en: 'recognize', ko: '인정하다' },
+    { en: 'essential', ko: '필수적인' },
+    { en: 'discourage', ko: '막다 [억제하다]' },
+    { en: 'tendency', ko: '경향' },
+    { en: 'familiar', ko: '익숙한' },
+    { en: 'concrete', ko: '구체적인' },
+    { en: 'human race', ko: '인류' },
+    { en: 'ancestor', ko: '조상' },
+    { en: 'wilderness', ko: '야생, 자연 환경' },
+    { en: 'proper', ko: '적절한' },
+    { en: 'struggle', ko: '어려움을 겪다' },
+    { en: 'escape', ko: '벗어나다' },
+    { en: 'eliminate', ko: '제거하다' },
+    { en: 'function', ko: '기능하다' },
+    { en: 'epidemic', ko: '전염병 [유행병]' },
+    { en: 'sanitation', ko: '위생' },
+    { en: 'serve', ko: '(~을 위해) 제 역할을 하다' },
+    { en: 'criteria', ko: '기준' },
+    { en: 'diverse', ko: '다양한' },
+    { en: 'objective', ko: '목표' },
+    { en: 'pessimistic', ko: '비관적인' },
+    { en: 'depressed', ko: '우울한' },
+    { en: 'hire', ko: '고용하다' },
+    { en: 'scientific', ko: '과학적인' },
+    { en: 'hopelessness', ko: '절망감' }
+  ],
   "7월 6일": [
-    // [첫 번째 사진: 70페이지, 01번 ~ 11번]
     { en: 'reinforce', ko: '강화하다' },
     { en: 'tap into', ko: '~를 이용하다' },
     { en: 'social need', ko: '사회적 욕구' },
@@ -527,8 +529,6 @@ const wordData = {
     { en: 'play on', ko: '(감정 등을) 이용하다' },
     { en: 'reward-seeking behavior', ko: '보상 추구 행동' },
     { en: 'instinct', ko: '본능' },
-
-    // [두 번째 사진: 71페이지, 12번 ~ 23번]
     { en: 'automatic response', ko: '자동적인 반응' },
     { en: 'suspicious activity', ko: '의심스러운 활동' },
     { en: 'fight-or-flight response', ko: '투쟁-도피 반응' },
@@ -543,7 +543,6 @@ const wordData = {
     { en: 'loss of control', ko: '자제력의 상실' }
   ],
   "7월 2일": [
-    // [첫 번째 사진: 01번 ~ 10번]
     { en: 'illustrate', ko: '보여주다' },
     { en: 'traditional', ko: '전통적인' },
     { en: 'reach', ko: '~에 이르다' },
@@ -554,8 +553,6 @@ const wordData = {
     { en: 'device', ko: '기기' },
     { en: 'select', ko: '선택하다' },
     { en: 'connect to sth', ko: '~에 연결하다' },
-
-    // [두 번째 사진: 11번 ~ 20번]
     { en: 'expand', ko: '확대되다, 증가하다' },
     { en: 'expenditure', ko: '지출' },
     { en: 'source', ko: '원천, 출처' },
@@ -566,8 +563,6 @@ const wordData = {
     { en: 'leading', ko: '가장 앞선, 1위의' },
     { en: 'entertainment', ko: '오락' },
     { en: 'decline', ko: '감소하다' },
-
-    // [세 번째 사진: 01번 ~ 10번]
     { en: 'financial', ko: '재정의, 금융의' },
     { en: 'attend', ko: '학교에 다니다' },
     { en: 'handle', ko: '문제 등을 다루다, 해결하다' },
@@ -578,8 +573,6 @@ const wordData = {
     { en: 'fascinating', ko: '매우 흥미로운' },
     { en: 'harsh', ko: '혹독한' },
     { en: 'compact', ko: '빽빽한, 단단한' },
-
-    // [네 번째 사진: 11번 ~ 20번]
     { en: 'resemble', ko: '닮다' },
     { en: 'efficiently', ko: '효율적으로' },
     { en: 'submit', ko: '제출하다' },
@@ -621,7 +614,7 @@ const wordData = {
     { en: 'increase sales', ko: '매출을 증가시키다' },
     { en: 'risk of sth', ko: '위험, ~의 위험' },
     { en: 'provide incentive to V', ko: '동기를 제공하다, ~할 동기를 제공하다' },
-    { en: 'be filled with with sth', ko: '가득 찬, ~로 가득 찬' },
+    { en: 'be filled with sth', ko: '가득 찬, ~로 가득 찬' },
     { en: 'alert A to B', ko: '경고하다, ~에게 ~에 대해 경고하다' },
     { en: 'goods and services', ko: '재화와 서비스' },
     { en: 'nature of work', ko: '일의 성격' },
@@ -664,13 +657,14 @@ let currentWords = [], idx = 0, score = 0;
 let lock = false, modeType = '', reports = [], qSide = 'en';
 let selectedVoice = localStorage.getItem('prefVoice') || 'female';
 let quizTimer = null; 
-let countdownTimer = null; // 🌟 10초 타임아웃 제한용 타이머 변수
+let countdownTimer = null;
 
 let AC = null;
 function initAudio() {
   if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
   if (AC && AC.state === 'suspended') AC.resume();
 }
+document.body.addEventListener('touchstart', initAudio, { once: true });
 
 function playBeep(ok) {
   try {
@@ -809,6 +803,7 @@ function renderQ() {
       <input class="blank-input" id="si" type="text" placeholder="정답을 모르겠으면 바로 확인을 누르세요" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
       <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
       <div class="answer-box" id="ansBox">
+        <div id="diffArea"></div>
         <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답 교재 표기</div>
         <h3>${w.ko}</h3>
         <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
@@ -827,6 +822,7 @@ function renderQ() {
       <input class="blank-input" id="si" type="text" placeholder="정답을 모르겠으면 바로 확인을 누르세요" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
       <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
       <div class="answer-box" id="ansBox">
+        <div id="diffArea"></div>
         <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답 교재 표기</div>
         <h3>${w.en}</h3>
         <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
@@ -851,7 +847,6 @@ function renderQ() {
       el.appendChild(b);
     });
     speak(w.en);
-    // 🌟 객관식 전용 10초 타임아웃 타이머 작동 시작
     countdownTimer = setTimeout(handleQuizTimeout, 10000);
   }
   else if (modeType === 'quiz_ko_en') {
@@ -871,7 +866,6 @@ function renderQ() {
       b.onclick = () => { handleQuizSelect(b, o, w.en); };
       el.appendChild(b);
     });
-    // 🌟 객관식 전용 10초 타임아웃 타이머 작동 시작
     countdownTimer = setTimeout(handleQuizTimeout, 10000);
   }
 }
@@ -900,6 +894,52 @@ function checkSimilarity(user, target) {
   return matchCount >= threshold;
 }
 
+/* LCS 기반 스펠링 오답 하이라이트 생성기 */
+function getCharDiff(userStr, targetStr) {
+  const s1 = userStr;
+  const s2 = targetStr;
+  const n = s1.length;
+  const m = s2.length;
+  
+  const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < m; j++) {
+      if (s1[i].toLowerCase() === s2[j].toLowerCase()) {
+        dp[i + 1][j + 1] = dp[i][j] + 1;
+      } else {
+        dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+  
+  let i = n, j = m;
+  let userArr = [], targetArr = [];
+  
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && s1[i - 1].toLowerCase() === s2[j - 1].toLowerCase()) {
+      userArr.unshift({ char: s1[i - 1], type: 'match' });
+      targetArr.unshift({ char: s2[j - 1], type: 'match' });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      targetArr.unshift({ char: s2[j - 1], type: 'add' });
+      j--;
+    } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+      userArr.unshift({ char: s1[i - 1], type: 'wrong' });
+      i--;
+    }
+  }
+  
+  const userHtml = userArr.map(d => 
+    d.type === 'wrong' ? `<span class="diff-wrong">${d.char === ' ' ? '&nbsp;' : d.char}</span>` : d.char
+  ).join('');
+  
+  const targetHtml = targetArr.map(d => 
+    d.type === 'add' ? `<span class="diff-correct">${d.char === ' ' ? '&nbsp;' : d.char}</span>` : d.char
+  ).join('');
+  
+  return { userHtml, targetHtml };
+}
+
 function checkSuper() {
   if (lock) return;
   const inp = document.getElementById('si');
@@ -907,6 +947,9 @@ function checkSuper() {
   
   const rawVal = inp.value.trim();
   const w = currentWords[idx];
+  const targetAnswer = (qSide === 'en') ? w.ko : w.en;
+  const diffArea = document.getElementById('diffArea');
+  if (diffArea) diffArea.innerHTML = '';
   
   if (rawVal === "") {
     lock = true;
@@ -919,13 +962,17 @@ function checkSuper() {
     document.getElementById('ansBox').style.display = 'block';
     
     reports.push({ en: w.en, ko: w.ko, ok: false });
+    if (qSide === 'ko') speak(w.en);
     return;
   }
 
   let ok = false;
+  let bestTarget = targetAnswer;
+
   if (qSide === 'en') {
-    const correctMeanings = w.ko.split(/[\/,]/);
+    const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
     ok = correctMeanings.some(mean => checkSimilarity(rawVal, mean));
+    bestTarget = correctMeanings[0];
   } else {
     ok = checkSimilarity(rawVal, w.en);
   }
@@ -934,29 +981,44 @@ function checkSuper() {
   document.getElementById('checkBtn').style.display = 'none';
   inp.disabled = true;
 
-  if (ok) {
+  const isExact = (cleanText(rawVal) === cleanText(bestTarget));
+
+  if (ok && isExact) {
     inp.classList.add('correct'); 
     playBeep(true); 
     reports.push({ en: w.en, ko: w.ko, ok: true });
-    document.getElementById('ansBox').style.width = '100%';
-    document.getElementById('ansBox').style.display = 'block';
   } else {
-    inp.classList.add('wrong'); 
-    playBeep(false);
-    reports.push({ en: w.en, ko: w.ko, ok: false });
-    
-    document.getElementById('ansBox').style.width = '100%';
-    document.getElementById('ansBox').style.display = 'block';
-    if (qSide === 'ko') speak(w.en);
+    inp.classList.add(ok ? 'correct' : 'wrong'); 
+    playBeep(ok); 
+    reports.push({ en: w.en, ko: w.ko, ok: ok });
+
+    // 스펠링 불일치 하이라이트 UI 렌더링
+    const diff = getCharDiff(rawVal, bestTarget);
+    if (diffArea) {
+      diffArea.innerHTML = `
+        <div class="diff-box">
+          <div class="diff-row">
+            <div class="diff-label">입력한 내용 (틀린 부분 표시):</div>
+            <div class="diff-text">${diff.userHtml}</div>
+          </div>
+          <div class="diff-row" style="margin-top:8px;">
+            <div class="diff-label">정답 단어 (누락된 철자 표시):</div>
+            <div class="diff-text">${diff.targetHtml}</div>
+          </div>
+        </div>
+      `;
+    }
+    if (!ok && qSide === 'ko') speak(w.en);
   }
+
+  document.getElementById('ansBox').style.width = '100%';
+  document.getElementById('ansBox').style.display = 'block';
 }
 
-/* ★ 객관식 선택 제어 모듈 (요청하신 정답 시 2초 자동 / 오답 시 완전 수동 보정) ★ */
 function handleQuizSelect(element, selectedOption, correctOption) {
   if (lock) return;
   lock = true;
   
-  // 보기를 골랐으므로 10초 카운트다운 타이머 즉시 파괴
   if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   
   const isCorrect = (selectedOption === correctOption);
@@ -969,7 +1031,6 @@ function handleQuizSelect(element, selectedOption, correctOption) {
 
   reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: isCorrect });
 
-  // 하단 수동 피드백 "다음 →" 버튼 생성
   const area = document.getElementById('gameArea');
   const nextBtnBox = document.createElement('div');
   nextBtnBox.style.marginTop = "16px";
@@ -978,34 +1039,28 @@ function handleQuizSelect(element, selectedOption, correctOption) {
   
   if (!isCorrect && modeType === 'quiz_ko_en') speak(currentWords[idx].en);
 
-  // 정답일 때만 2초 후 자동 이동 / 오답일 때는 타이머 없이 완전히 멈춰서 수동 대기
   if (isCorrect) {
     quizTimer = setTimeout(moveNext, 2000);
   }
 }
 
-/* ★ 🌟 신규 탑재: 객관식 10초 타임오버(아무것도 선택 안 함) 예외 처리 핸들러 ★ */
 function handleQuizTimeout() {
   if (lock) return;
   lock = true;
   
   if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
   
-  // 제한시간 종료 자막 안내 교체
   const hintEl = document.getElementById('timerHint');
   if (hintEl) {
     hintEl.textContent = "제한시간 초과! 오답 처리되었습니다.";
     hintEl.style.color = "var(--red)";
   }
   
-  // 삐- 소리 및 진짜 정답 보기 노란색으로 노출
   playBeep(false);
   document.getElementById('correctOpt')?.classList.add('reveal');
   
-  // 오답 데이터 기록 누적
   reports.push({ en: currentWords[idx].en, ko: currentWords[idx].ko, ok: false });
   
-  // 오답이므로 자동으로 넘어가지 않게 타이머 작동을 배제하고 "다음 →" 버튼만 띄워 수동 대기 고정
   const area = document.getElementById('gameArea');
   const nextBtnBox = document.createElement('div');
   nextBtnBox.style.marginTop = "16px";
