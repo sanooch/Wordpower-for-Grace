@@ -280,7 +280,7 @@ body {
     <div class="mc mc-hl" onclick="startMode('super_en_ko')">
       <div class="mc-icon">🚀</div>
       <div class="mc-label">주관식 (영➔한)</div>
-      <div class="mc-desc">뜻 직접 입력 (절반 이상 일치)</div>
+      <div class="mc-desc">뜻 직접 입력 (오답 시 재작성)</div>
     </div>
     <div class="mc mc-hl" onclick="startMode('super_ko_en')">
       <div class="mc-icon">✍️</div>
@@ -928,11 +928,21 @@ function renderQ() {
       <div class="feedback-row" id="fb"></div>
       <input class="blank-input" id="si" type="text" placeholder="정답을 모르겠으면 바로 확인을 누르세요" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
       <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
+      
       <div class="answer-box" id="ansBox">
         <div id="diffArea"></div>
         <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답 교재 표기</div>
         <h3>${w.ko}</h3>
-        <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
+        
+        <div id="retryArea" style="display:none; margin-top:14px;">
+          <div style="font-size:12px; color:var(--red); font-weight:700; margin-bottom:6px;">
+            ✍️ 위 정답 뜻을 보고 다시 한 번 정확히 입력하세요
+          </div>
+          <input class="blank-input" id="retryInput" type="text" placeholder="뜻 그대로 따라 쓰기" autocomplete="off" spellcheck="false" style="margin: 0 auto 10px; width:100%; border-color:var(--red);" onkeyup="if(event.key==='Enter')verifyRetry()">
+          <button class="action-btn" id="retryBtn" style="width:100%; margin:0; background:var(--red);" onclick="verifyRetry()">확인 후 넘어가기</button>
+        </div>
+
+        <button class="action-btn" id="nextPassBtn" style="margin-top:12px;background:var(--green);padding:11px;" onclick="moveNext()">다음 →</button>
       </div>`;
     setTimeout(() => { try { document.getElementById('si')?.focus(); } catch(e){} }, 250);
     speak(w.en);
@@ -1008,7 +1018,7 @@ function renderQ() {
 
 function cleanText(str) {
   if(!str) return '';
-  return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)]/g, '');
+  return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)\[\]]/g, '');
 }
 
 function checkSimilarity(user, target) {
@@ -1094,7 +1104,18 @@ function verifyRetry() {
   const userTyped = rInp.value.trim();
   const w = currentWords[idx];
 
-  if (cleanText(userTyped) === cleanText(w.en)) {
+  let isMatch = false;
+
+  if (qSide === 'ko') {
+    // 한->영: 영단어 철자가 정확히 일치하는지 확인
+    isMatch = (cleanText(userTyped) === cleanText(w.en));
+  } else {
+    // 영->한: 여러 뜻 중 하나라도 전체 일치하거나, 교재 전체 표기와 일치하는지 확인
+    const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
+    isMatch = (cleanText(userTyped) === cleanText(w.ko)) || correctMeanings.some(m => cleanText(userTyped) === cleanText(m));
+  }
+
+  if (isMatch) {
     playBeep(true);
     rInp.classList.remove('wrong');
     rInp.classList.add('correct');
@@ -1105,9 +1126,9 @@ function verifyRetry() {
     rInp.classList.remove('correct');
     rInp.classList.add('wrong');
     rInp.value = '';
-    rInp.placeholder = '철자가 맞지 않습니다. 다시 쓰세요!';
+    rInp.placeholder = '일치하지 않습니다. 다시 입력하세요!';
     rInp.focus();
-    speak(w.en);
+    if (qSide === 'ko') speak(w.en);
   }
 }
 
@@ -1122,6 +1143,7 @@ function checkSuper() {
   const diffArea = document.getElementById('diffArea');
   if (diffArea) diffArea.innerHTML = '';
   
+  // 1. 빈칸으로 바로 확인을 누른 경우 (오답 처리)
   if (rawVal === "") {
     lock = true;
     inp.classList.add('wrong');
@@ -1135,10 +1157,8 @@ function checkSuper() {
     reports.push({ en: w.en, ko: w.ko, ok: false });
     addWrongWord(w);
 
-    if (qSide === 'ko') {
-      speak(w.en);
-      showRetryRequirement();
-    }
+    if (qSide === 'ko') speak(w.en);
+    showRetryRequirement();
     return;
   }
 
@@ -1157,7 +1177,14 @@ function checkSuper() {
   document.getElementById('checkBtn').style.display = 'none';
   inp.disabled = true;
 
-  const isExact = (cleanText(rawVal) === cleanText(bestTarget));
+  // 완전 일치 여부 확인
+  let isExact = false;
+  if (qSide === 'en') {
+    const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
+    isExact = (cleanText(rawVal) === cleanText(w.ko)) || correctMeanings.some(m => cleanText(rawVal) === cleanText(m));
+  } else {
+    isExact = (cleanText(rawVal) === cleanText(bestTarget));
+  }
 
   if (ok && isExact) {
     inp.classList.add('correct'); 
@@ -1178,7 +1205,7 @@ function checkSuper() {
             <div class="diff-text">${diff.userHtml}</div>
           </div>
           <div class="diff-row" style="margin-top:8px;">
-            <div class="diff-label">정답 단어 (누락된 철자 표시):</div>
+            <div class="diff-label">정답 표기 (누락/불일치 표시):</div>
             <div class="diff-text">${diff.targetHtml}</div>
           </div>
         </div>
@@ -1189,11 +1216,11 @@ function checkSuper() {
   document.getElementById('ansBox').style.width = '100%';
   document.getElementById('ansBox').style.display = 'block';
 
-  if (qSide === 'ko') {
-    speak(w.en);
-    if (!ok || !isExact) {
-      showRetryRequirement();
-    }
+  if (qSide === 'ko') speak(w.en);
+
+  // 영➔한, 한➔영 모두 정답과 완전히 일치하지 못한 경우(오답 또는 불완전 일치) 재입력 요구
+  if (!ok || !isExact) {
+    showRetryRequirement();
   }
 }
 
