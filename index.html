@@ -307,7 +307,7 @@ body {
     <div class="mc mc-hl" onclick="startMode('super_en_ko')">
       <div class="mc-icon">🚀</div>
       <div class="mc-label">주관식 (영➔한)</div>
-      <div class="mc-desc">뜻 직접 입력 (오답 시 재작성)</div>
+      <div class="mc-desc">뜻 직접 입력 (조사/공백 허용)</div>
     </div>
     <div class="mc mc-hl" onclick="startMode('super_ko_en')">
       <div class="mc-icon">✍️</div>
@@ -317,12 +317,12 @@ body {
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_en_ko')">
       <div class="mc-icon">✅</div>
       <div class="mc-label">객관식 (영➔한)</div>
-      <div class="mc-desc">뜻 고르기 · 10초 제한시간</div>
+      <div class="mc-desc">뜻 고르기 · 15초 제한시간</div>
     </div>
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_ko_en')">
       <div class="mc-icon">🔤</div>
       <div class="mc-label">객관식 (한➔영)</div>
-      <div class="mc-desc">단어 고르기 · 라디오 버튼/음성</div>
+      <div class="mc-desc">단어 고르기 · 15초 제한시간</div>
     </div>
     <div class="mc mc-full" onclick="goManage()">
       <div class="mc-icon">📝</div>
@@ -1012,7 +1012,7 @@ function renderQ() {
     const opts = shuffle([...new Set([w.ko, ...distractors])]);
     area.innerHTML = `
       <div class="card-box">
-        <div class="card-hint" id="timerHint">올바른 뜻을 고르세요 (제한시간 10초)</div>
+        <div class="card-hint" id="timerHint">올바른 뜻을 고르세요 (제한시간 15초)</div>
         <div class="card-word" style="font-size:24px;">${w.en} <button class="tts-btn" onclick="speak('${w.en.replace(/'/g,"\\'")}')">🔊</button></div>
       </div>
       <div class="quiz-opts" id="qOpts"></div>`;
@@ -1029,14 +1029,15 @@ function renderQ() {
       el.appendChild(b);
     });
     speak(w.en);
-    countdownTimer = setTimeout(handleQuizTimeout, 10000);
+    // 15초 제한시간 적용
+    countdownTimer = setTimeout(handleQuizTimeout, 15000);
   }
   else if (modeType === 'quiz_ko_en') {
     const distractors = shuffle(distractorPool.filter(x=>x.en!==w.en)).slice(0,3).map(x=>x.en);
     const opts = shuffle([...new Set([w.en, ...distractors])]);
     area.innerHTML = `
       <div class="card-box">
-        <div class="card-hint" id="timerHint">올바른 단어/숙어를 고르세요 (제한시간 10초)</div>
+        <div class="card-hint" id="timerHint">올바른 단어/숙어를 고르세요 (제한시간 15초)</div>
         <div class="card-word" style="font-size:20px; font-weight:500; word-break:keep-all;">${w.ko}</div>
       </div>
       <div class="quiz-opts" id="qOpts"></div>`;
@@ -1054,13 +1055,48 @@ function renderQ() {
       b.onclick = () => { handleQuizSelect(b, o, w.en); };
       el.appendChild(b);
     });
-    countdownTimer = setTimeout(handleQuizTimeout, 10000);
+    // 15초 제한시간 적용
+    countdownTimer = setTimeout(handleQuizTimeout, 15000);
   }
 }
 
+// 띄어쓰기 및 특수기호 완전 제거 함수 (공백 없이 입력해도 정답 처리)
 function cleanText(str) {
   if(!str) return '';
-  return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)\[\]]/g, '');
+  return str.toLowerCase().replace(/['"’`_➔~.,?!\s\(\)\[\]~·]/g, '');
+}
+
+// 한국어 조사 및 접미사 유연 처리기 (~을, ~를, ~에, ~와, ~과, ~의, ~으로, ~로, ~하다, ~되다 등)
+function stripKoreanParticles(str) {
+  let s = cleanText(str);
+  s = s.replace(/^(을|를|에|와|과|의|에게|으로|로|에서)/g, '');
+  s = s.replace(/(하다|되다|시키다|받다|내리다|두다|들다|가다|오다)$/g, '');
+  s = s.replace(/(을|를|에|와|과|의|에게|으로|로|에서)$/g, '');
+  return s;
+}
+
+// 한국어 뜻 정답 매칭 판정기 (조사/공백 허용)
+function matchKoreanMeaning(user, target) {
+  const uClean = cleanText(user);
+  const tClean = cleanText(target);
+  if (!uClean || !tClean) return false;
+  if (uClean === tClean) return true;
+
+  // 조사를 제거한 핵심 어근 비교
+  const uCore = stripKoreanParticles(uClean);
+  const tCore = stripKoreanParticles(tClean);
+  if (uCore.length >= 2 && tCore.length >= 2) {
+    if (uCore === tCore) return true;
+    if (tCore.includes(uCore) && uCore.length >= Math.ceil(tCore.length * 0.6)) return true;
+    if (uCore.includes(tCore) && tCore.length >= Math.ceil(uCore.length * 0.6)) return true;
+  }
+
+  // 절반 이상 글자 포함 유사도 검사
+  let matchCount = 0;
+  for (let i = 0; i < uClean.length; i++) {
+    if (tClean.includes(uClean[i])) matchCount++;
+  }
+  return matchCount >= (tClean.length / 2);
 }
 
 function checkSimilarity(user, target) {
@@ -1152,7 +1188,7 @@ function verifyRetry() {
     isMatch = (cleanText(userTyped) === cleanText(w.en));
   } else {
     const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
-    isMatch = (cleanText(userTyped) === cleanText(w.ko)) || correctMeanings.some(m => cleanText(userTyped) === cleanText(m));
+    isMatch = matchKoreanMeaning(userTyped, w.ko) || correctMeanings.some(m => matchKoreanMeaning(userTyped, m));
   }
 
   if (isMatch) {
@@ -1206,7 +1242,7 @@ function checkSuper() {
 
   if (qSide === 'en') {
     const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
-    ok = correctMeanings.some(mean => checkSimilarity(rawVal, mean));
+    ok = correctMeanings.some(mean => matchKoreanMeaning(rawVal, mean));
     bestTarget = correctMeanings[0];
   } else {
     ok = checkSimilarity(rawVal, w.en);
@@ -1219,7 +1255,7 @@ function checkSuper() {
   let isExact = false;
   if (qSide === 'en') {
     const correctMeanings = w.ko.split(/[\/,]/).map(s => s.trim());
-    isExact = (cleanText(rawVal) === cleanText(w.ko)) || correctMeanings.some(m => cleanText(rawVal) === cleanText(m));
+    isExact = matchKoreanMeaning(rawVal, w.ko) || correctMeanings.some(m => matchKoreanMeaning(rawVal, m));
   } else {
     isExact = (cleanText(rawVal) === cleanText(bestTarget));
   }
