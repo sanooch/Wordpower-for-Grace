@@ -787,27 +787,36 @@ function playBeep(ok) {
 function speak(text) {
   try {
     window.speechSynthesis.cancel();
-    
-    // sth -> something 등 축약어 발음 보정
+    if (!text) return;
+
+    // 1. sth, sb, to V 축약어를 실제 발음 단어로 확실하게 변환
+    // 단어 앞뒤에 공백이나 문장부호가 있거나 문자열 시작/끝일 때 모두 대응
     let spokenText = text
-      .replace(/\bsth\b/gi, 'something')
-      .replace(/\bsb\b/gi, 'somebody')
-      .replace(/\bto V\b/gi, 'to do');
+      .replace(/(^|[^a-zA-Z])sth($|[^a-zA-Z])/gi, '$1something$2')
+      .replace(/(^|[^a-zA-Z])sb($|[^a-zA-Z])/gi, '$1somebody$2')
+      .replace(/(^|[^a-zA-Z])to\s*V($|[^a-zA-Z])/gi, '$1to do$2');
+
+    // 양 끝 불필요한 공백 정리
+    spokenText = spokenText.trim();
 
     const u = new SpeechSynthesisUtterance(spokenText);
     u.lang = 'en-US'; 
     u.rate = 0.85; 
     u.pitch = 1.0;
-    u.onerror = (e) => { console.log("TTS path locked"); };
     
+    // 디버깅용: 실제 TTS로 넘어가는 텍스트를 콘솔에서 확인 가능
+    console.log("TTS 발음 원문:", text, "➔ 변환 후:", spokenText);
+
     const vv = speechSynthesis.getVoices();
     const pick = selectedVoice === 'female'
       ? vv.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || (v.name.includes('Google') && !v.name.toLowerCase().includes('male'))))
       : vv.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.toLowerCase().includes('male')));
     if (pick) u.voice = pick;
-    
+
     window.speechSynthesis.speak(u);
-  } catch(e){}
+  } catch(e) {
+    console.error("TTS 에러:", e);
+  }
 }
 
 function renderTabs() {
