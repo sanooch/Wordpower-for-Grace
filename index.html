@@ -285,7 +285,7 @@ body {
     <div class="mc mc-hl" onclick="startMode('super_ko_en')">
       <div class="mc-icon">✍️</div>
       <div class="mc-label">주관식 (한➔영)</div>
-      <div class="mc-desc">스펠링 직접 타이핑 (절반 이상 일치)</div>
+      <div class="mc-desc">스펠링 직접 타이핑 (오답 시 재작성)</div>
     </div>
     <div class="mc" style="background:var(--accent-bg); border-color:#C7D2FE" onclick="startMode('quiz_en_ko')">
       <div class="mc-icon">✅</div>
@@ -349,7 +349,6 @@ body {
 <script>
 const baseWordData = {
   "9월 7일": [
-    // [76페이지 01번 ~ 11번]
     { en: 'exchange a word with', ko: '~와 말을 주고받다' },
     { en: 'sense of belonging', ko: '소속감' },
     { en: 'add up over time', ko: '시간이 지나며 쌓이다' },
@@ -361,8 +360,6 @@ const baseWordData = {
     { en: 'red tape', ko: '불필요한 형식' },
     { en: 'keep sth in force', ko: '~을 시행 상태로 유지하다' },
     { en: 'match reality', ko: '현실과 일치하다' },
-
-    // [77페이지 12번 ~ 22번]
     { en: 'deceive', ko: '속이다' },
     { en: 'make better use of', ko: '~을 더 잘 활용하다' },
     { en: 'take part in', ko: '~에 참여하다' },
@@ -703,7 +700,6 @@ const baseWordData = {
   ]
 };
 
-// 로컬스토리지 오답 관리
 function getSavedWrongWords() {
   try {
     return JSON.parse(localStorage.getItem('savedWrongWords') || '[]');
@@ -736,7 +732,6 @@ function clearAllWrongWords() {
   }
 }
 
-// 탭 데이터 조회 (오답노트 포함)
 function getActivePool() {
   if (currentWeekTab === '🚨 오답노트') {
     return getSavedWrongWords();
@@ -789,23 +784,17 @@ function speak(text) {
     window.speechSynthesis.cancel();
     if (!text) return;
 
-    // 1. sth, sb, to V 축약어를 실제 발음 단어로 확실하게 변환
-    // 단어 앞뒤에 공백이나 문장부호가 있거나 문자열 시작/끝일 때 모두 대응
     let spokenText = text
       .replace(/(^|[^a-zA-Z])sth($|[^a-zA-Z])/gi, '$1something$2')
       .replace(/(^|[^a-zA-Z])sb($|[^a-zA-Z])/gi, '$1somebody$2')
       .replace(/(^|[^a-zA-Z])to\s*V($|[^a-zA-Z])/gi, '$1to do$2');
 
-    // 양 끝 불필요한 공백 정리
     spokenText = spokenText.trim();
 
     const u = new SpeechSynthesisUtterance(spokenText);
     u.lang = 'en-US'; 
     u.rate = 0.85; 
     u.pitch = 1.0;
-    
-    // 디버깅용: 실제 TTS로 넘어가는 텍스트를 콘솔에서 확인 가능
-    console.log("TTS 발음 원문:", text, "➔ 변환 후:", spokenText);
 
     const vv = speechSynthesis.getVoices();
     const pick = selectedVoice === 'female'
@@ -814,9 +803,7 @@ function speak(text) {
     if (pick) u.voice = pick;
 
     window.speechSynthesis.speak(u);
-  } catch(e) {
-    console.error("TTS 에러:", e);
-  }
+  } catch(e){}
 }
 
 function renderTabs() {
@@ -960,11 +947,21 @@ function renderQ() {
       <div class="feedback-row" id="fb"></div>
       <input class="blank-input" id="si" type="text" placeholder="정답을 모르겠으면 바로 확인을 누르세요" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter')checkSuper()">
       <button class="action-btn" id="checkBtn" onclick="checkSuper()">정답 확인</button>
+      
       <div class="answer-box" id="ansBox">
         <div id="diffArea"></div>
         <div style="font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px">정답 교재 표기</div>
         <h3>${w.en}</h3>
-        <button class="action-btn" style="margin-top:12px;background:var(--green);padding:11px" onclick="moveNext()">다음 →</button>
+        
+        <div id="retryArea" style="display:none; margin-top:14px;">
+          <div style="font-size:12px; color:var(--red); font-weight:700; margin-bottom:6px;">
+            ✍️ 위 정답을 보고 스펠링을 다시 한 번 정확히 입력하세요
+          </div>
+          <input class="blank-input" id="retryInput" type="text" placeholder="스펠링 그대로 따라 쓰기" autocomplete="off" spellcheck="false" style="margin: 0 auto 10px; width:100%; border-color:var(--red);" onkeyup="if(event.key==='Enter')verifyRetry()">
+          <button class="action-btn" id="retryBtn" style="width:100%; margin:0; background:var(--red);" onclick="verifyRetry()">확인 후 넘어가기</button>
+        </div>
+
+        <button class="action-btn" id="nextPassBtn" style="margin-top:12px;background:var(--green);padding:11px;" onclick="moveNext()">다음 →</button>
       </div>`;
     setTimeout(() => { try { document.getElementById('si')?.focus(); } catch(e){} }, 250);
   }
@@ -1078,6 +1075,42 @@ function getCharDiff(userStr, targetStr) {
   return { userHtml, targetHtml };
 }
 
+function showRetryRequirement() {
+  const nextBtn = document.getElementById('nextPassBtn');
+  const retryArea = document.getElementById('retryArea');
+  if (nextBtn) nextBtn.style.display = 'none';
+  if (retryArea) {
+    retryArea.style.display = 'block';
+    setTimeout(() => {
+      const rInp = document.getElementById('retryInput');
+      if (rInp) { rInp.value = ''; rInp.focus(); }
+    }, 200);
+  }
+}
+
+function verifyRetry() {
+  const rInp = document.getElementById('retryInput');
+  if (!rInp) return;
+  const userTyped = rInp.value.trim();
+  const w = currentWords[idx];
+
+  if (cleanText(userTyped) === cleanText(w.en)) {
+    playBeep(true);
+    rInp.classList.remove('wrong');
+    rInp.classList.add('correct');
+    rInp.disabled = true;
+    setTimeout(moveNext, 500);
+  } else {
+    playBeep(false);
+    rInp.classList.remove('correct');
+    rInp.classList.add('wrong');
+    rInp.value = '';
+    rInp.placeholder = '철자가 맞지 않습니다. 다시 쓰세요!';
+    rInp.focus();
+    speak(w.en);
+  }
+}
+
 function checkSuper() {
   if (lock) return;
   const inp = document.getElementById('si');
@@ -1089,7 +1122,6 @@ function checkSuper() {
   const diffArea = document.getElementById('diffArea');
   if (diffArea) diffArea.innerHTML = '';
   
-  // 1. 빈칸으로 바로 확인을 누른 경우 (오답 처리)
   if (rawVal === "") {
     lock = true;
     inp.classList.add('wrong');
@@ -1103,8 +1135,10 @@ function checkSuper() {
     reports.push({ en: w.en, ko: w.ko, ok: false });
     addWrongWord(w);
 
-    // ★ 주관식(한➔영) 정답창 노출 시 자동 발음 재생
-    if (qSide === 'ko') speak(w.en);
+    if (qSide === 'ko') {
+      speak(w.en);
+      showRetryRequirement();
+    }
     return;
   }
 
@@ -1135,7 +1169,6 @@ function checkSuper() {
     reports.push({ en: w.en, ko: w.ko, ok: ok });
     if (!ok) addWrongWord(w);
 
-    // 스펠링 불일치 하이라이트 생성
     const diff = getCharDiff(rawVal, bestTarget);
     if (diffArea) {
       diffArea.innerHTML = `
@@ -1156,9 +1189,11 @@ function checkSuper() {
   document.getElementById('ansBox').style.width = '100%';
   document.getElementById('ansBox').style.display = 'block';
 
-  // ★ 정답/오답/부분일치 여부와 상관없이 주관식(한➔영)이면 답이 열릴 때 자동 발음
   if (qSide === 'ko') {
     speak(w.en);
+    if (!ok || !isExact) {
+      showRetryRequirement();
+    }
   }
 }
 
@@ -1242,7 +1277,6 @@ function showResult() {
     `<tr><td>${r.en}</td><td style="color:var(--text2);font-size:12px">${r.ko}</td><td class="${r.ok?'ok':'ng'}">${r.ok?'○':'×'}</td></tr>`
   ).join('');
 
-  // 틀린 단어 재학습 버튼 렌더링
   const wrongPool = reports.filter(r => !r.ok).map(r => ({ en: r.en, ko: r.ko }));
   const retryBox = document.getElementById('retryWrongBox');
   if (wrongPool.length > 0) {
