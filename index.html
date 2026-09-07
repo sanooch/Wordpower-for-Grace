@@ -1089,6 +1089,7 @@ function checkSuper() {
   const diffArea = document.getElementById('diffArea');
   if (diffArea) diffArea.innerHTML = '';
   
+  // 1. 빈칸으로 바로 확인을 누른 경우 (오답 처리)
   if (rawVal === "") {
     lock = true;
     inp.classList.add('wrong');
@@ -1101,6 +1102,8 @@ function checkSuper() {
     
     reports.push({ en: w.en, ko: w.ko, ok: false });
     addWrongWord(w);
+
+    // ★ 주관식(한➔영) 정답창 노출 시 자동 발음 재생
     if (qSide === 'ko') speak(w.en);
     return;
   }
@@ -1132,6 +1135,7 @@ function checkSuper() {
     reports.push({ en: w.en, ko: w.ko, ok: ok });
     if (!ok) addWrongWord(w);
 
+    // 스펠링 불일치 하이라이트 생성
     const diff = getCharDiff(rawVal, bestTarget);
     if (diffArea) {
       diffArea.innerHTML = `
@@ -1147,11 +1151,15 @@ function checkSuper() {
         </div>
       `;
     }
-    if (!ok && qSide === 'ko') speak(w.en);
   }
 
   document.getElementById('ansBox').style.width = '100%';
   document.getElementById('ansBox').style.display = 'block';
+
+  // ★ 정답/오답/부분일치 여부와 상관없이 주관식(한➔영)이면 답이 열릴 때 자동 발음
+  if (qSide === 'ko') {
+    speak(w.en);
+  }
 }
 
 function handleQuizSelect(element, selectedOption, correctOption) {
