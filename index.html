@@ -787,14 +787,25 @@ function playBeep(ok) {
 function speak(text) {
   try {
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.0;
+    
+    // sth -> something 등 축약어 발음 보정
+    let spokenText = text
+      .replace(/\bsth\b/gi, 'something')
+      .replace(/\bsb\b/gi, 'somebody')
+      .replace(/\bto V\b/gi, 'to do');
+
+    const u = new SpeechSynthesisUtterance(spokenText);
+    u.lang = 'en-US'; 
+    u.rate = 0.85; 
+    u.pitch = 1.0;
     u.onerror = (e) => { console.log("TTS path locked"); };
+    
     const vv = speechSynthesis.getVoices();
     const pick = selectedVoice === 'female'
       ? vv.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || (v.name.includes('Google') && !v.name.toLowerCase().includes('male'))))
       : vv.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.toLowerCase().includes('male')));
     if (pick) u.voice = pick;
+    
     window.speechSynthesis.speak(u);
   } catch(e){}
 }
